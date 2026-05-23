@@ -206,21 +206,23 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private suspend fun executeDeletion() {
+    private fun executeDeletion() {
         val items = _uiState.value.pendingDeletions
         if (items.isEmpty()) return
 
         val uris = items.map { Uri.parse(it.uri) }
-        val totalSize = items.sumOf { it.fileSize }
 
-        // Use MediaStore.createDeleteRequest for Android 11+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             try {
-                val pendingIntent = android.provider.MediaStore.createDeleteRequest(
+                val deleteRequest = android.provider.MediaStore.createDeleteRequest(
                     context.contentResolver, uris
                 )
-                // The pendingIntent needs to be launched from Activity
-                // This is handled in the composable via rememberLauncherForActivityResult
+                _uiState.update {
+                    it.copy(
+                        pendingDeleteIntentSender = deleteRequest.intentSender,
+                        showDeleteConfirmSheet = false,
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -229,18 +231,33 @@ class ReviewViewModel @Inject constructor(
                         showDeleteConfirmSheet = false,
                     )
                 }
-                return
             }
         }
+    }
 
-        metricsRepository.trackBatchDeletion(items.size, totalSize)
-        _uiState.update {
-            it.copy(
-                pendingDeletions = emptyList(),
-                showDeleteConfirmSheet = false,
-                toastMessage = "${items.size} items deleted",
-                toastEmoji = "🧹",
-            )
+    fun onDeletionComplete(success: Boolean) {
+        val items = _uiState.value.pendingDeletions
+        val totalSize = items.sumOf { it.fileSize }
+        if (success) {
+            viewModelScope.launch {
+                metricsRepository.trackBatchDeletion(items.size, totalSize)
+            }
+            _uiState.update {
+                it.copy(
+                    pendingDeletions = emptyList(),
+                    pendingDeleteIntentSender = null,
+                    toastMessage = "${items.size} items deleted",
+                    toastEmoji = "🧹",
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    pendingDeleteIntentSender = null,
+                    toastMessage = "Deletion cancelled",
+                    toastEmoji = "↩️",
+                )
+            }
         }
     }
 

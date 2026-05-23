@@ -54,4 +54,16 @@ class SettingsViewModel @Inject constructor(
     fun toggleAnalytics(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setAnalyticsEnabled(enabled) }
     }
+
+    fun resetOnboarding() {
+        viewModelScope.launch { settingsRepository.resetOnboarding() }
+    }
+
+    fun resetAllDevOverrides() {
+        viewModelScope.launch {
+            settingsRepository.setHapticsEnabled(true)
+            settingsRepository.setUseDeleteQueue(true)
+            settingsRepository.setAnalyticsEnabled(false)
+        }
+    }
 }

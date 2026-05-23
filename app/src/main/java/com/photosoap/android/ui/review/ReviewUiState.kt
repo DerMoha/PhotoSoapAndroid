@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.review
 
+import android.content.IntentSender
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.PendingDeletionItem
 import com.photosoap.android.domain.model.Photo
@@ -30,6 +31,8 @@ data class ReviewUiState(
     val showDeleteConfirmSheet: Boolean = false,
     val showPhotoPreview: Boolean = false,
     val previewPhoto: Photo? = null,
+    val pendingDeleteIntentSender: IntentSender? = null,
+    val showDeveloperOptions: Boolean = false,
 ) {
     val currentPhoto: Photo?
         get() = if (currentIndex < photos.size) photos[currentIndex] else null
@@ -39,6 +42,9 @@ data class ReviewUiState(
 
     val totalDeletionFileSize: Long
         get() = pendingDeletions.sumOf { it.fileSize }
+
+    val hasPendingDeletions: Boolean
+        get() = pendingDeletions.isNotEmpty()
 }
 
 sealed interface ReviewUiEvent {

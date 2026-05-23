@@ -40,6 +40,9 @@ sealed interface AppDestination {
 
     @kotlinx.serialization.Serializable
     data object Settings : AppDestination
+
+    @kotlinx.serialization.Serializable
+    data object DeveloperOptions : AppDestination
 }
 
 data class BottomNavItem(
@@ -107,6 +110,12 @@ fun AppNavHost(
             }
             composable<AppDestination.Settings> {
                 SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDeveloperOptions = { navController.navigate(AppDestination.DeveloperOptions) },
+                )
+            }
+            composable<AppDestination.DeveloperOptions> {
+                com.photosoap.android.ui.settings.DeveloperOptionsScreen(
                     onNavigateBack = { navController.popBackStack() },
                 )
             }

@@ -17,6 +17,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override val sortOrder: Flow<String> = dataStore.sortOrder
 
     override suspend fun setOnboardingSeen() = dataStore.setOnboardingSeen()
+    override suspend fun resetOnboarding() = dataStore.resetOnboarding()
     override suspend fun setHapticsEnabled(enabled: Boolean) = dataStore.setHapticsEnabled(enabled)
     override suspend fun setUseDeleteQueue(enabled: Boolean) = dataStore.setUseDeleteQueue(enabled)
     override suspend fun setAnalyticsEnabled(enabled: Boolean) = dataStore.setAnalyticsEnabled(enabled)

@@ -11,6 +11,7 @@ interface SettingsRepository {
     val sortOrder: Flow<String>
 
     suspend fun setOnboardingSeen()
+    suspend fun resetOnboarding()
     suspend fun setHapticsEnabled(enabled: Boolean)
     suspend fun setUseDeleteQueue(enabled: Boolean)
     suspend fun setAnalyticsEnabled(enabled: Boolean)

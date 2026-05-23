@@ -45,6 +45,10 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { it[KEY_HAS_SEEN_ONBOARDING] = true }
     }
 
+    suspend fun resetOnboarding() {
+        context.dataStore.edit { it[KEY_HAS_SEEN_ONBOARDING] = false }
+    }
+
     suspend fun setHapticsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_HAPTICS_ENABLED] = enabled }
     }

@@ -6,10 +6,6 @@ import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,24 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.photosoap.android.domain.model.SwipeDirection
+import com.photosoap.android.ui.components.DeleteQueueTray
 import com.photosoap.android.ui.components.EmptyState
 import com.photosoap.android.ui.components.PhotoCardContent
 import com.photosoap.android.ui.components.ProgressRing
@@ -70,15 +56,17 @@ fun ReviewScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    var deleteIntentSender by remember { mutableStateOf<IntentSender?>(null) }
-
     val deletionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            viewModel.onEvent(ReviewUiEvent.ConfirmDelete)
-        } else {
-            viewModel.onEvent(ReviewUiEvent.CancelDeleteConfirm)
+        viewModel.onDeletionComplete(result.resultCode == android.app.Activity.RESULT_OK)
+    }
+
+    LaunchedEffect(state.pendingDeleteIntentSender) {
+        state.pendingDeleteIntentSender?.let { intentSender ->
+            deletionLauncher.launch(
+                IntentSenderRequest.Builder(intentSender).build()
+            )
         }
     }
 
@@ -143,9 +131,6 @@ fun ReviewScreen(
                                 onSwiped = { direction ->
                                     viewModel.onEvent(ReviewUiEvent.Swiped(direction))
                                 },
-                                onSwipeProgress = { progress ->
-                                    // Progress tracking for overlay
-                                },
                                 onTap = {
                                     viewModel.onEvent(ReviewUiEvent.TappedCard)
                                 },
@@ -186,7 +171,7 @@ fun ReviewScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${state.photosRemaining} remaining",
                         style = MaterialTheme.typography.labelMedium,
@@ -196,6 +181,15 @@ fun ReviewScreen(
                             .padding(horizontal = 16.dp),
                         textAlign = TextAlign.Center,
                     )
+
+                    if (state.hasPendingDeletions) {
+                        DeleteQueueTray(
+                            itemCount = state.pendingDeletions.size,
+                            totalFileSize = state.totalDeletionFileSize,
+                            onUndo = { viewModel.onEvent(ReviewUiEvent.UndoLastDeletion) },
+                            onViewList = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
+                        )
+                    }
                 }
             }
         }
