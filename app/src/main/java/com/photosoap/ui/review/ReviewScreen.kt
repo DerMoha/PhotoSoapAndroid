@@ -181,8 +181,12 @@ fun ReviewScreen(
             }
         }
 
-        // Toast overlays
+        // Toast overlays with auto-dismiss
         uiState.newlyUnlockedAchievement?.let { achievementId ->
+            androidx.compose.runtime.LaunchedEffect(achievementId) {
+                kotlinx.coroutines.delay(3000)
+                viewModel.dismissAchievement()
+            }
             AchievementToast(
                 achievementId = achievementId,
                 onDismiss = { viewModel.dismissAchievement() },
@@ -190,6 +194,10 @@ fun ReviewScreen(
         }
 
         uiState.streakMilestone?.let { milestone ->
+            androidx.compose.runtime.LaunchedEffect(milestone) {
+                kotlinx.coroutines.delay(2500)
+                viewModel.dismissStreakMilestone()
+            }
             StreakToast(
                 count = milestone,
                 onDismiss = { viewModel.dismissStreakMilestone() },
@@ -198,6 +206,10 @@ fun ReviewScreen(
 
         uiState.dailyGoalComplete.let {
             if (it) {
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(3000)
+                    viewModel.dismissDailyGoal()
+                }
                 DailyGoalToast(onDismiss = { viewModel.dismissDailyGoal() })
             }
         }

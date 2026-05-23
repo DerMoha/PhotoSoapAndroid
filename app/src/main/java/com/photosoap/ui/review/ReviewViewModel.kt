@@ -59,6 +59,8 @@ class ReviewViewModel @Inject constructor(
     private val statsRepository: StatsRepository,
     private val settingsRepository: SettingsRepository,
     private val achievementRepository: AchievementRepository,
+    private val aggregateMetricsService: com.photosoap.data.service.AggregateMetricsService,
+    private val hapticsService: com.photosoap.data.service.HapticsService,
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ReviewUiState())
@@ -106,6 +108,8 @@ class ReviewViewModel @Inject constructor(
             when (direction) {
                 SwipeDirection.Delete -> {
                     statsRepository.incrementDeleted(currentPhoto.fileSize)
+                    aggregateMetricsService.recordDeletion(currentPhoto.fileSize)
+                    hapticsService.notificationWarning()
 
                     if (state.useDeleteList) {
                         val item = PendingDeletionItem(currentPhoto)
@@ -118,7 +122,6 @@ class ReviewViewModel @Inject constructor(
                             )
                         }
                     } else {
-                        // Immediate deletion
                         photoRepository.deletePhotos(listOf(currentPhoto.id))
                         _uiState.update {
                             it.copy(
@@ -131,6 +134,8 @@ class ReviewViewModel @Inject constructor(
                 }
                 SwipeDirection.Keep -> {
                     statsRepository.incrementKept()
+                    aggregateMetricsService.recordKeep()
+                    hapticsService.impactMedium()
                     _uiState.update {
                         it.copy(
                             keptCount = it.keptCount + 1,
@@ -153,6 +158,7 @@ class ReviewViewModel @Inject constructor(
             _uiState.update { it.copy(isAllReviewed = true) }
             viewModelScope.launch {
                 statsRepository.incrementReviewed()
+                aggregateMetricsService.recordReview()
                 checkAchievements()
             }
         } else {
@@ -166,6 +172,7 @@ class ReviewViewModel @Inject constructor(
             }
             viewModelScope.launch {
                 statsRepository.incrementReviewed()
+                aggregateMetricsService.recordReview()
                 statsRepository.updateTodayReviewCount(state.todayReviewCount + 1)
                 updateDailyChallenge()
                 checkAchievements()
@@ -263,6 +270,12 @@ class ReviewViewModel @Inject constructor(
     }
 
     fun onDeletionConfirmed() {
+        val deletedCount = _uiState.value.deleteQueue.size
+        val freedBytes = _uiState.value.deleteQueue.sumOf { it.fileSize }
+        viewModelScope.launch {
+            aggregateMetricsService.recordBatchDeletion(deletedCount, freedBytes)
+            hapticsService.notificationSuccess()
+        }
         _uiState.update {
             it.copy(
                 deleteQueue = emptyList(),

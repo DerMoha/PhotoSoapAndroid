@@ -13,13 +13,16 @@ class AchievementRepositoryImpl @Inject constructor(
 ) : AchievementRepository {
 
     override suspend fun getAchievements(): List<Achievement> {
-        val unlocked = unlockedAchievementDao.observeAll()
-        // For suspend, we just get first emission
-        val unlockedIds = mutableSetOf<String>()
+        val unlockedEntities = try {
+            unlockedAchievementDao.observeAll().let { flow ->
+                kotlinx.coroutines.flow.first { true }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        val unlockedIds = unlockedEntities.map { it.achievementId }.toSet()
         return Achievement.all.map { achievement ->
-            achievement.copy(
-                isUnlocked = unlockedIds.contains(achievement.id),
-            )
+            achievement.copy(isUnlocked = unlockedIds.contains(achievement.id))
         }
     }
 
