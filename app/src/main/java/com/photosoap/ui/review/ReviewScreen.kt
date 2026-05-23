@@ -1,5 +1,10 @@
 package com.photosoap.ui.review
 
+import android.content.ContentUris
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,16 +39,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.photosoap.R
+import com.photosoap.domain.model.PendingDeletionItem
 import com.photosoap.domain.model.SwipeDirection
 import com.photosoap.ui.components.DeleteQueueTray
 import com.photosoap.ui.components.ProgressRing
@@ -56,6 +66,28 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var deleteQueueItems by remember { mutableStateOf<List<PendingDeletionItem>>(emptyList()) }
+
+    // Deletion launcher for MediaStore.createDeleteRequest
+    val deletionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            viewModel.onDeletionConfirmed()
+        } else {
+            viewModel.onDeletionCancelled()
+        }
+    }
+
+    // Trigger deletion when pendingIntentSender is set
+    val pendingIntentSender = uiState.pendingDeleteIntentSender
+    androidx.compose.runtime.LaunchedEffect(pendingIntentSender) {
+        pendingIntentSender?.let {
+            val request = IntentSenderRequest.Builder(it).build()
+            deletionLauncher.launch(request)
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {

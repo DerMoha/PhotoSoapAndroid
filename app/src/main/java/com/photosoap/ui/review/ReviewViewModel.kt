@@ -1,6 +1,10 @@
 package com.photosoap.ui.review
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.ContentUris
+import android.os.Build
+import android.provider.MediaStore
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.photosoap.domain.model.DailyChallenge
 import com.photosoap.domain.model.PendingDeletionItem
@@ -47,11 +51,12 @@ data class ReviewUiState(
 
 @HiltViewModel
 class ReviewViewModel @Inject constructor(
+    application: Application,
     private val photoRepository: PhotoRepository,
     private val statsRepository: StatsRepository,
     private val settingsRepository: SettingsRepository,
     private val achievementRepository: AchievementRepository,
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
@@ -220,21 +225,51 @@ class ReviewViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val contentResolver = getApplication<android.app.Application>().contentResolver
                     val uris = state.deleteQueue.map { item ->
-                        android.content.ContentUris.withAppendedId(
-                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            item.photo.id
+                        val uri = if (item.photo.isVideo) {
+                            ContentUris.withAppendedId(
+                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                item.photo.id
+                            )
+                        } else {
+                            ContentUris.withAppendedId(
+                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                item.photo.id
+                            )
+                        }
+                        uri
+                    }
+                    val pendingIntent = MediaStore.createDeleteRequest(contentResolver, uris)
+                    _uiState.update {
+                        it.copy(
+                            pendingDeleteIntentSender = pendingIntent.intentSender,
+                            showDeleteExplainerSheet = false,
                         )
                     }
-                    // We need a ContentResolver reference — this is a simplification
-                    // In production, inject ContentResolver or use an IntentSender approach
+                } else {
+                    // Pre-Android 11: delete directly
+                    photoRepository.deletePhotos(state.deleteQueue.map { it.photo.id })
+                    _uiState.update { it.copy(deleteQueue = emptyList(), showDeleteExplainerSheet = false) }
                 }
-                _uiState.update { it.copy(deleteQueue = emptyList(), showDeleteExplainerSheet = false) }
             } catch (e: Exception) {
-                // Handle error
+                _uiState.update { it.copy(pendingDeleteIntentSender = null) }
             }
         }
+    }
+
+    fun onDeletionConfirmed() {
+        _uiState.update {
+            it.copy(
+                deleteQueue = emptyList(),
+                pendingDeleteIntentSender = null,
+            )
+        }
+    }
+
+    fun onDeletionCancelled() {
+        _uiState.update { it.copy(pendingDeleteIntentSender = null) }
     }
 
     fun setMediaKind(kind: ReviewMediaKind) {

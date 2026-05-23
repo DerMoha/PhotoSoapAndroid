@@ -1,7 +1,8 @@
 package com.photosoap.ui.components
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,18 +17,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -42,13 +42,18 @@ fun SwipeableCard(
     onSwipe: (SwipeResult) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var offsetX by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val offsetAnimatable = remember { Animatable(0f) }
     var isDragging by remember { mutableStateOf(false) }
+    var isCommitting by remember { mutableStateOf(false) }
 
-    val threshold = 300f
+    val threshold = with(density) { 300.dp.toPx() }
+    val screenWidth = with(density) { 600.dp.toPx() }
+
+    val currentOffset = offsetAnimatable.value
 
     val rotation by animateFloatAsState(
-        targetValue = if (isDragging) (offsetX / 20f) else 0f,
+        targetValue = if (isDragging || isCommitting) (currentOffset / 20f).coerceIn(-15f, 15f) else 0f,
         animationSpec = tween(100),
     )
 
@@ -58,12 +63,12 @@ fun SwipeableCard(
     )
 
     val keepAlpha by animateFloatAsState(
-        targetValue = if (offsetX > 0) (offsetX / threshold).coerceIn(0f, 1f) * 0.8f else 0f,
+        targetValue = if (currentOffset > 0) (currentOffset / threshold).coerceIn(0f, 1f) * 0.8f else 0f,
         animationSpec = tween(100),
     )
 
     val deleteAlpha by animateFloatAsState(
-        targetValue = if (offsetX < 0) (-offsetX / threshold).coerceIn(0f, 1f) * 0.8f else 0f,
+        targetValue = if (currentOffset < 0) (-currentOffset / threshold).coerceIn(0f, 1f) * 0.8f else 0f,
         animationSpec = tween(100),
     )
 
@@ -103,7 +108,7 @@ fun SwipeableCard(
         Card(
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(offsetX.roundToInt(), 0) }
+                .offset { IntOffset(offsetAnimatable.value.roundToInt(), 0) }
                 .graphicsLayer {
                     rotationZ = rotation
                     scaleX = scale
@@ -113,24 +118,66 @@ fun SwipeableCard(
                     detectHorizontalDragGestures(
                         onDragStart = {
                             isDragging = true
+                            isCommitting = false
                         },
                         onDragEnd = {
                             isDragging = false
-                            if (offsetX > threshold) {
+                            val scope = this@pointerInput
+                            if (currentOffset > threshold) {
+                                isCommitting = true
+                                scope.apply {
+                                    kotlinx.coroutines.launch {
+                                        offsetAnimatable.animateTo(
+                                            targetValue = screenWidth,
+                                            animationSpec = tween(300),
+                                        )
+                                    }
+                                }
                                 onSwipe(SwipeResult.Keep)
-                            } else if (offsetX < -threshold) {
+                            } else if (currentOffset < -threshold) {
+                                isCommitting = true
+                                scope.apply {
+                                    kotlinx.coroutines.launch {
+                                        offsetAnimatable.animateTo(
+                                            targetValue = -screenWidth,
+                                            animationSpec = tween(300),
+                                        )
+                                    }
+                                }
                                 onSwipe(SwipeResult.Delete)
                             } else {
-                                // Snap back
-                                offsetX = 0f
+                                scope.apply {
+                                    kotlinx.coroutines.launch {
+                                        offsetAnimatable.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(dampingRatio = 0.8f),
+                                        )
+                                    }
+                                }
                             }
                         },
                         onDragCancel = {
                             isDragging = false
-                            offsetX = 0f
+                            isCommitting = false
+                            this@pointerInput.apply {
+                                kotlinx.coroutines.launch {
+                                    offsetAnimatable.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(dampingRatio = 0.8f),
+                                    )
+                                }
+                            }
                         },
                         onHorizontalDrag = { _, dragAmount ->
-                            offsetX += dragAmount
+                            this@pointerInput.apply {
+                                kotlinx.coroutines.launch {
+                                    offsetAnimatable.snapTo(
+                                        (offsetAnimatable.value + dragAmount).coerceIn(
+                                            -screenWidth, screenWidth
+                                        )
+                                    )
+                                }
+                            }
                         },
                     )
                 },
@@ -147,7 +194,6 @@ fun SwipeableCard(
                     contentScale = ContentScale.Crop,
                 )
 
-                // Gradient overlay at bottom for metadata
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -162,7 +208,6 @@ fun SwipeableCard(
                         ),
                 )
 
-                // Photo info
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -175,7 +220,6 @@ fun SwipeableCard(
                     )
                 }
 
-                // File size
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -188,7 +232,6 @@ fun SwipeableCard(
                     )
                 }
 
-                // Video indicator
                 if (photo.isVideo) {
                     Box(
                         modifier = Modifier
