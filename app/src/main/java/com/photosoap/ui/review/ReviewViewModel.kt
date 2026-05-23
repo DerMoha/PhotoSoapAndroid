@@ -47,6 +47,9 @@ data class ReviewUiState(
     val swipedPhotoId: Long? = null,
     val lastSwipeDirection: SwipeDirection? = null,
     val pendingDeleteIntentSender: android.content.IntentSender? = null,
+    val previewPhoto: Photo? = null,
+    val albums: List<com.photosoap.domain.model.AlbumInfo> = emptyList(),
+    val years: List<Int> = emptyList(),
 )
 
 @HiltViewModel
@@ -270,6 +273,24 @@ class ReviewViewModel @Inject constructor(
 
     fun onDeletionCancelled() {
         _uiState.update { it.copy(pendingDeleteIntentSender = null) }
+    }
+
+    fun onTapPhoto() {
+        val state = _uiState.value
+        val photo = state.photos.getOrNull(state.currentIndex)
+        _uiState.update { it.copy(previewPhoto = photo) }
+    }
+
+    fun dismissPreview() {
+        _uiState.update { it.copy(previewPhoto = null) }
+    }
+
+    fun loadFilterData() {
+        viewModelScope.launch {
+            val albums = photoRepository.getAlbums()
+            val years = photoRepository.getAvailableYears()
+            _uiState.update { it.copy(albums = albums, years = years) }
+        }
     }
 
     fun setMediaKind(kind: ReviewMediaKind) {

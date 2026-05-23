@@ -97,7 +97,10 @@ fun ReviewScreen(
                 filterActive = uiState.filter != com.photosoap.domain.model.PhotoFilter.All ||
                     uiState.mediaKind != com.photosoap.domain.model.ReviewMediaKind.All,
                 dailyProgress = uiState.dailyChallenge.progressFraction,
-                onFilterClick = { viewModel.toggleFilterSheet() },
+                onFilterClick = {
+                    viewModel.loadFilterData()
+                    viewModel.toggleFilterSheet()
+                },
             )
 
             // Content
@@ -133,6 +136,7 @@ fun ReviewScreen(
                                         SwipeResult.None -> {}
                                     }
                                 },
+                                onTap = { viewModel.onTapPhoto() },
                             )
                         }
                     }
@@ -196,6 +200,50 @@ fun ReviewScreen(
             if (it) {
                 DailyGoalToast(onDismiss = { viewModel.dismissDailyGoal() })
             }
+        }
+
+        // Filter sheet
+        if (uiState.showFilterSheet) {
+            com.photosoap.ui.review.components.FilterSheet(
+                currentMediaKind = uiState.mediaKind,
+                currentFilter = uiState.filter,
+                sortNewestFirst = uiState.sortNewestFirst,
+                albums = uiState.albums,
+                years = uiState.years,
+                onMediaKindChange = { viewModel.setMediaKind(it) },
+                onFilterChange = { viewModel.setFilter(it) },
+                onSortChange = { viewModel.setSortOrder(it) },
+                onDismiss = { viewModel.toggleFilterSheet() },
+            )
+        }
+
+        // Delete queue sheet
+        if (uiState.showDeleteQueueSheet) {
+            com.photosoap.ui.review.components.DeleteQueueSheet(
+                queue = uiState.deleteQueue,
+                onRemoveItem = { viewModel.removeFromQueue(it) },
+                onClearQueue = { viewModel.clearDeleteQueue() },
+                onDeleteAll = {
+                    viewModel.toggleDeleteQueueSheet()
+                    viewModel.deleteAllQueued()
+                },
+                onDismiss = { viewModel.toggleDeleteQueueSheet() },
+            )
+        }
+
+        // Delete explainer sheet
+        if (uiState.showDeleteExplainerSheet) {
+            com.photosoap.ui.review.components.DeleteBatchExplainerSheet(
+                onDismiss = { viewModel.toggleDeleteExplainerSheet() },
+            )
+        }
+
+        // Photo preview
+        if (uiState.previewPhoto != null) {
+            com.photosoap.ui.review.components.PhotoPreviewSheet(
+                photo = uiState.previewPhoto!!,
+                onDismiss = { viewModel.dismissPreview() },
+            )
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +34,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.photosoap.domain.model.Photo
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 enum class SwipeResult { Keep, Delete, None }
 
@@ -40,12 +44,15 @@ enum class SwipeResult { Keep, Delete, None }
 fun SwipeableCard(
     photo: Photo,
     onSwipe: (SwipeResult) -> Unit,
+    onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
     val offsetAnimatable = remember { Animatable(0f) }
     var isDragging by remember { mutableStateOf(false) }
     var isCommitting by remember { mutableStateOf(false) }
+    var dragMoved by remember { mutableStateOf(false) }
 
     val threshold = with(density) { 300.dp.toPx() }
     val screenWidth = with(density) { 600.dp.toPx() }
@@ -119,64 +126,59 @@ fun SwipeableCard(
                         onDragStart = {
                             isDragging = true
                             isCommitting = false
+                            dragMoved = false
                         },
                         onDragEnd = {
                             isDragging = false
-                            val scope = this@pointerInput
-                            if (currentOffset > threshold) {
+                            if (offsetAnimatable.value > threshold) {
                                 isCommitting = true
-                                scope.apply {
-                                    kotlinx.coroutines.launch {
-                                        offsetAnimatable.animateTo(
-                                            targetValue = screenWidth,
-                                            animationSpec = tween(300),
-                                        )
-                                    }
+                                scope.launch {
+                                    offsetAnimatable.animateTo(
+                                        targetValue = screenWidth,
+                                        animationSpec = tween(300),
+                                    )
                                 }
                                 onSwipe(SwipeResult.Keep)
-                            } else if (currentOffset < -threshold) {
+                            } else if (offsetAnimatable.value < -threshold) {
                                 isCommitting = true
-                                scope.apply {
-                                    kotlinx.coroutines.launch {
-                                        offsetAnimatable.animateTo(
-                                            targetValue = -screenWidth,
-                                            animationSpec = tween(300),
-                                        )
-                                    }
+                                scope.launch {
+                                    offsetAnimatable.animateTo(
+                                        targetValue = -screenWidth,
+                                        animationSpec = tween(300),
+                                    )
                                 }
                                 onSwipe(SwipeResult.Delete)
                             } else {
-                                scope.apply {
-                                    kotlinx.coroutines.launch {
-                                        offsetAnimatable.animateTo(
-                                            targetValue = 0f,
-                                            animationSpec = spring(dampingRatio = 0.8f),
-                                        )
-                                    }
+                                // Snap back if not enough drag, or treat as tap if barely moved
+                                scope.launch {
+                                    offsetAnimatable.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(dampingRatio = 0.8f),
+                                    )
+                                }
+                                if (!dragMoved && onTap != null) {
+                                    onTap()
                                 }
                             }
                         },
                         onDragCancel = {
                             isDragging = false
                             isCommitting = false
-                            this@pointerInput.apply {
-                                kotlinx.coroutines.launch {
-                                    offsetAnimatable.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(dampingRatio = 0.8f),
-                                    )
-                                }
+                            scope.launch {
+                                offsetAnimatable.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(dampingRatio = 0.8f),
+                                )
                             }
                         },
                         onHorizontalDrag = { _, dragAmount ->
-                            this@pointerInput.apply {
-                                kotlinx.coroutines.launch {
-                                    offsetAnimatable.snapTo(
-                                        (offsetAnimatable.value + dragAmount).coerceIn(
-                                            -screenWidth, screenWidth
-                                        )
+                            dragMoved = true
+                            scope.launch {
+                                offsetAnimatable.snapTo(
+                                    (offsetAnimatable.value + dragAmount).coerceIn(
+                                        -screenWidth, screenWidth
                                     )
-                                }
+                                )
                             }
                         },
                     )
