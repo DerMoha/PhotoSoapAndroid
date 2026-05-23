@@ -3,28 +3,23 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
 
 android {
-    namespace = "com.photosoap.android"
+    namespace = "com.photosoap"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.photosoap.android"
-        minSdk = 29
+        applicationId = "com.photosoap"
+        minSdk = 28
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "SUPABASE_METRICS_URL", "\"\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"\"")
-        buildConfigField("String", "APP_VERSION", "\"1.0.0\"")
-        buildConfigField("int", "BUILD_NUMBER", "1")
     }
 
     buildTypes {
@@ -34,6 +29,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
         }
     }
 
@@ -48,7 +47,6 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 
     room {
@@ -57,56 +55,63 @@ android {
 }
 
 dependencies {
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Compose
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
+    implementation(libs.compose.animation)
     implementation(libs.compose.foundation)
+    implementation(libs.compose.runtime)
     debugImplementation(libs.compose.ui.tooling)
 
+    // Navigation
     implementation(libs.navigation.compose)
 
+    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
+    // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    // DataStore
+    implementation(libs.datastore.preferences)
+
+    // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Media
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
 
+    // Network
+    implementation(libs.okhttp)
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
 
-    implementation(libs.kotlinx.serialization.json)
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-    implementation(libs.datastore.preferences)
-
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.junit.api)
-    testRuntimeOnly(libs.junit.engine)
+    // Testing
+    testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
-    testImplementation(libs.robolectric)
-    testImplementation(platform(libs.compose.bom))
-    testImplementation(libs.compose.ui.test)
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
+    testImplementation(libs.kotlinx.coroutines.test)
 }

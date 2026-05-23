@@ -1,16 +1,42 @@
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-/app/build
-/app/schemas
+# Built application files
 *.apk
+*.ap_
 *.aab
-*.keystore
-!gradle/wrapper/gradle-wrapper.jar
+*.dex
+*.class
+bin/
+gen/
+out/
+build/
+
+# Gradle files
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+
+# Kotlin
+.kotlin/
+
+# Local configuration
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test
+test-output/
+
+# Room schemas
+app/schemas/
+
+# Secrets
+secrets.properties

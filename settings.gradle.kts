@@ -11,7 +11,6 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
 dependencyResolution {
     @Suppress("UnstableApiUsage")
     repositories {
@@ -20,5 +19,5 @@ dependencyResolution {
     }
 }
 
-rootProject.name = "PhotoSoapAndroid"
+rootProject.name = "PhotoSoap"
 include(":app")

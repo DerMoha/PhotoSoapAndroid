@@ -1,17 +1,19 @@
-# Retrofit
+# Add project specific ProGuard rules here.
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.photosoap.android.data.remote.dto.** { *; }
 
-# Kotlinx Serialization
--keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
--keepclasseswithmembers class kotlinx.serialization.json.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
--keep,includedescriptorclasses class com.photosoap.android.**$$serializer { *; }
--keepclassmembers class com.photosoap.android.** {
+# Hilt
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# Kotlin Serialization
+-keepattributes SerialDescriptor
+-keep class kotlinx.serialization.** { *; }
+-keepclassmembers class com.photosoap.** {
     *** Companion;
 }
--keepclasseswithmembers class com.photosoap.android.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
+
+# Room
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *

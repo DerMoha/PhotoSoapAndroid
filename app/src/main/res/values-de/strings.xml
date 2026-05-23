@@ -1,47 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhotoSoap</string>
-    <string name="tab_stats">Statistiken</string>
     <string name="tab_review">Durchsehen</string>
+    <string name="tab_stats">Statistik</string>
     <string name="tab_achievements">Erfolge</string>
-    <string name="settings">Einstellungen</string>
-    <string name="overview">Übersicht</string>
-    <string name="photos_reviewed">Fotos durchgesehen</string>
-    <string name="photos_deleted">Fotos gelöscht</string>
-    <string name="photos_kept">Fotos behalten</string>
-    <string name="storage_freed">Speicher freigegeben</string>
-    <string name="streaks">Serien</string>
-    <string name="reviewed_today">Heute durchgesehen</string>
-    <string name="best_day">Bester Tag</string>
-    <string name="best_streak">Beste Serie</string>
-    <string name="day_streak">Tages­serie</string>
-    <string name="keep_delete_ratio">Behalten/Löschen Verhältnis</string>
-    <string name="all_reviewed">Alle durchgesehen!</string>
-    <string name="loading_library">Bibliothek wird geladen…</string>
-    <string name="no_photos">Keine Fotos zum Durchsehen</string>
-    <string name="get_started">Los geht\'s</string>
-    <string name="swipe_to_review">Wischen zum Durchsehen</string>
-    <string name="private">100% Privat</string>
-    <string name="earn_achievements">Erfolge sammeln</string>
-    <string name="photo_library_access">Zugriff auf Fotobibliothek</string>
-    <string name="allow_access">Zugriff erlauben</string>
-    <string name="access_required">Zugriff erforderlich</string>
-    <string name="open_settings">Einstellungen öffnen</string>
-    <string name="haptic_feedback">Haptisches Feedback</string>
-    <string name="use_delete_list">Löschliste verwenden</string>
-    <string name="share_analytics">Anonyme Analyse teilen</string>
-    <string name="delete_items">Einträge löschen</string>
-    <string name="clear_all">Alle löschen</string>
+
+    <string name="review_keep">BEHALTEN</string>
+    <string name="review_delete">LÖSCHEN</string>
+    <string name="review_loading">Bibliothek wird geladen…</string>
+    <string name="review_empty">Keine Medien zum Durchsehen</string>
+    <string name="review_all_reviewed">Alles durchgesehen!</string>
+    <string name="review_all_reviewed_summary">%1$d gelöscht, %2$d behalten</string>
+    <string name="review_delete_list_summary">Löschliste anzeigen (%1$d Einträge)</string>
+    <string name="review_again">Erneut durchsehen</string>
+    <string name="review_delete_list_button">Löschliste durchsehen</string>
+    <string name="delete_queue_title">Löschliste</string>
+    <string name="delete_queue_count">%d Fotos</string>
+    <string name="delete_queue_empty">Keine Einträge in der Liste</string>
+    <string name="delete_queue_clear">Liste leeren</string>
+    <string name="delete_queue_delete_all">Alle löschen</string>
+    <string name="delete_queue_explainer_title">Bereit zum Löschen</string>
+    <string name="delete_queue_explainer_message">Android wird Sie um Bestätigung bitten. Einmal bestätigte Löschungen können nicht rückgängig gemacht werden.</string>
+
+    <string name="filter_title">Filter</string>
+    <string name="filter_all_media">Alle</string>
+    <string name="filter_photos">Fotos</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_sort_newest">Neueste zuerst</string>
+    <string name="filter_sort_oldest">Älteste zuerst</string>
+    <string name="filter_all_photos">Alle Fotos</string>
+    <string name="filter_years">Jahre</string>
+    <string name="filter_months">Monate</string>
+    <string name="filter_albums">Alben</string>
+
+    <string name="stats_title">Statistik</string>
+    <string name="stats_photos_reviewed">Fotos durchgesehen</string>
+    <string name="stats_photos_deleted">Fotos gelöscht</string>
+    <string name="stats_photos_kept">Fotos behalten</string>
+    <string name="stats_storage_freed">Speicher freigegeben</string>
+    <string name="stats_reviewed_today">Heute durchgesehen</string>
+    <string name="stats_days_in_row">Tage in Folge</string>
+    <string name="stats_most_in_day">Rekord an einem Tag</string>
+    <string name="stats_keep_delete_ratio">Behalten / Löschen Verhältnis</string>
+
+    <string name="achievements_title">Erfolge</string>
+    <string name="achievements_unlocked">%1$d / %2$d</string>
+    <string name="achievements_first_steps">Erste Schritte</string>
+    <string name="achievements_spring_cleaning">Frühjahrsputz</string>
+    <string name="achievements_memory_keeper">Erinnerungsbewahrer</string>
+    <string name="achievements_streak_master">Serienmeister</string>
+    <string name="achievements_daily_devotee">Täglicher Nutzer</string>
+    <string name="achievements_storage_saver">Speichersparer</string>
+    <string name="achievements_century_club">Hunderter-Club</string>
+    <string name="achievements_photo_pro">Foto-Profi</string>
+    <string name="achievements_decisive">Entscheidungsfreudig</string>
+    <string name="achievements_cleanup_champion">Aufräum-Champion</string>
+
+    <string name="achievement_first_steps_desc">50 Fotos durchgesehen</string>
+    <string name="achievement_spring_cleaning_desc">200 Fotos gelöscht</string>
+    <string name="achievement_memory_keeper_desc">500 Fotos behalten</string>
+    <string name="achievement_streak_master_desc">Beste Serie von 100 erreicht</string>
+    <string name="achievement_daily_devotee_desc">14 Tage in Folge Fotos durchgesehen</string>
+    <string name="achievement_storage_saver_desc">5 GB Speicher freigegeben</string>
+    <string name="achievement_century_club_desc">500 Fotos in einer Sitzung</string>
+    <string name="achievement_photo_pro_desc">5000 Fotos insgesamt</string>
+    <string name="achievement_decisive_desc">200 aufeinanderfolgende Aktionen</string>
+    <string name="achievement_cleanup_champion_desc">2000 Fotos gelöscht</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_haptics">Haptisches Feedback</string>
+    <string name="settings_haptics_desc">Vibrieren bei Wischaktionen</string>
+    <string name="settings_use_delete_list">Löschliste verwenden</string>
+    <string name="settings_use_delete_list_desc">Fotos für Sammellöschung vormerken statt sofort zu löschen</string>
+    <string name="settings_privacy">Datenschutz</string>
+    <string name="settings_share_analytics">Anonyme Analysen teilen</string>
+    <string name="settings_share_analytics_desc">Hilf PhotoSoap mit anonymen Nutzungsdaten zu verbessern</string>
+    <string name="settings_developer_options">Entwickleroptionen</string>
+
+    <string name="dev_options_title">Entwickleroptionen</string>
+    <string name="dev_reset_onboarding">Onboarding zurücksetzen</string>
+    <string name="dev_reset_onboarding_desc">Onboarding beim nächsten Start erneut anzeigen</string>
+    <string name="dev_reset_overrides">Alle Entwickler-Überschreibungen zurücksetzen</string>
+
+    <string name="onboarding_welcome">Willkommen bei PhotoSoap</string>
+    <string name="onboarding_subtitle">Befreie deine Fotobibliothek mit einem Wisch</string>
+    <string name="onboarding_swipe_desc">Nach rechts wischen zum Behalten, nach links zum Löschen. So einfach.</string>
+    <string name="onboarding_privacy_title">100% Privat</string>
+    <string name="onboarding_privacy_desc">Deine Fotos verlassen nie dein Gerät. Kein Upload. Keine Cloud.</string>
+    <string name="onboarding_rewards_title">Erfolge verdienen</string>
+    <string name="onboarding_rewards_desc">Verfolge deinen Fortschritt und schalte Belohnungen frei.</string>
+    <string name="onboarding_get_started">Los geht\'s</string>
+    <string name="onboarding_permission_title">Foto-Zugriff erlauben</string>
+    <string name="onboarding_permission_desc">PhotoSoap benötigt Zugriff auf deine Fotos.</string>
+    <string name="onboarding_permission_allow">Zugriff erlauben</string>
+    <string name="onboarding_permission_open_settings">Einstellungen öffnen</string>
+
+    <string name="undo">Rückgängig</string>
     <string name="cancel">Abbrechen</string>
     <string name="delete">Löschen</string>
-    <string name="keep">BEHALTEN</string>
-    <string name="delete_label">LÖSCHEN</string>
-    <string name="remaining">übrig</string>
-    <string name="media_type">Medientyp</string>
-    <string name="sort_order">Sortierung</string>
-    <string name="newest_first">Neueste zuerst</string>
-    <string name="oldest_first">Älteste zuerst</string>
-    <string name="photos_label">Fotos</string>
-    <string name="videos">Videos</string>
-    <string name="all">Alle</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="close">Schließen</string>
+    <string name="done">Fertig</string>
+    <string name="start_over">Neu starten</string>
+
+    <string name="achievement_unlocked">Erfolg freigeschaltet!</string>
+    <string name="streak_milestone">Serie: %d!</string>
+    <string name="daily_goal_complete">Tagesziel erreicht!</string>
+    <string name="deletion_success">Erfolgreich gelöscht</string>
+    <string name="deletion_cancelled">Löschung abgebrochen</string>
+    <string name="queue_pruned">Einige vorgemerkte Fotos wurden bereits entfernt</string>
+
+    <string name="limited_access_banner">Eingeschränkter Zugriff. Füge weitere Fotos in den Einstellungen hinzu.</string>
 </resources>

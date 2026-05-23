@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Soap bubble / photo cleanup icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0"/>
+    <path
+        android:fillColor="#3859A4"
+        android:pathData="M42,42h24l-2,2h-20l-2,-2zM40,48l2,16h24l2,-16H40zM48,58l-2,4h16l-2,-4H48z"/>
+</vector>
