@@ -1,0 +1,75 @@
+package com.photosoap.android
+
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.photosoap.android.data.local.datastore.SettingsDataStore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val settingsDataStore: SettingsDataStore,
+    private val permissionChecker: PermissionChecker,
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Onboarding)
+    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val hasSeenOnboarding = settingsDataStore.hasSeenOnboarding.first()
+            if (!hasSeenOnboarding) {
+                _uiState.value = MainUiState.Onboarding
+                return@launch
+            }
+            checkPermissionAndNavigate()
+        }
+    }
+
+    fun onGetStarted() {
+        viewModelScope.launch {
+            settingsDataStore.setOnboardingSeen()
+            checkPermissionAndNavigate()
+        }
+    }
+
+    fun onPermissionResult(granted: Boolean) {
+        viewModelScope.launch {
+            if (granted) {
+                _uiState.value = MainUiState.Main
+            } else {
+                _uiState.value = MainUiState.PermissionDenied
+            }
+        }
+    }
+
+    fun onOpenSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", "com.photosoap.android", null)
+        }
+        // This would be launched from the composable with context
+    }
+
+    private suspend fun checkPermissionAndNavigate() {
+        if (permissionChecker.hasMediaPermissions()) {
+            _uiState.value = MainUiState.Main
+        } else {
+            _uiState.value = MainUiState.PermissionRequest
+        }
+    }
+}
+
+sealed interface MainUiState {
+    data object Onboarding : MainUiState
+    data object PermissionRequest : MainUiState
+    data object PermissionDenied : MainUiState
+    data object Main : MainUiState
+}

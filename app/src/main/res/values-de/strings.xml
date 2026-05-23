@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoSoap</string>
+    <string name="tab_stats">Statistiken</string>
+    <string name="tab_review">Durchsehen</string>
+    <string name="tab_achievements">Erfolge</string>
+    <string name="settings">Einstellungen</string>
+    <string name="overview">Übersicht</string>
+    <string name="photos_reviewed">Fotos durchgesehen</string>
+    <string name="photos_deleted">Fotos gelöscht</string>
+    <string name="photos_kept">Fotos behalten</string>
+    <string name="storage_freed">Speicher freigegeben</string>
+    <string name="streaks">Serien</string>
+    <string name="reviewed_today">Heute durchgesehen</string>
+    <string name="best_day">Bester Tag</string>
+    <string name="best_streak">Beste Serie</string>
+    <string name="day_streak">Tages­serie</string>
+    <string name="keep_delete_ratio">Behalten/Löschen Verhältnis</string>
+    <string name="all_reviewed">Alle durchgesehen!</string>
+    <string name="loading_library">Bibliothek wird geladen…</string>
+    <string name="no_photos">Keine Fotos zum Durchsehen</string>
+    <string name="get_started">Los geht\'s</string>
+    <string name="swipe_to_review">Wischen zum Durchsehen</string>
+    <string name="private">100% Privat</string>
+    <string name="earn_achievements">Erfolge sammeln</string>
+    <string name="photo_library_access">Zugriff auf Fotobibliothek</string>
+    <string name="allow_access">Zugriff erlauben</string>
+    <string name="access_required">Zugriff erforderlich</string>
+    <string name="open_settings">Einstellungen öffnen</string>
+    <string name="haptic_feedback">Haptisches Feedback</string>
+    <string name="use_delete_list">Löschliste verwenden</string>
+    <string name="share_analytics">Anonyme Analyse teilen</string>
+    <string name="delete_items">Einträge löschen</string>
+    <string name="clear_all">Alle löschen</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="keep">BEHALTEN</string>
+    <string name="delete_label">LÖSCHEN</string>
+    <string name="remaining">übrig</string>
+    <string name="media_type">Medientyp</string>
+    <string name="sort_order">Sortierung</string>
+    <string name="newest_first">Neueste zuerst</string>
+    <string name="oldest_first">Älteste zuerst</string>
+    <string name="photos_label">Fotos</string>
+    <string name="videos">Videos</string>
+    <string name="all">Alle</string>
+</resources>

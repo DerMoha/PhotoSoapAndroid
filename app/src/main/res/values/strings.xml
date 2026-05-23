@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoSoap</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_review">Review</string>
+    <string name="tab_achievements">Achievements</string>
+</resources>
