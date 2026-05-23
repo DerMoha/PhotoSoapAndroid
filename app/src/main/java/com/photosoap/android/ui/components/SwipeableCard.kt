@@ -1,26 +1,19 @@
 package com.photosoap.android.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -29,6 +22,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.ui.theme.AppMotion
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -53,6 +47,37 @@ fun SwipeableCard(
     var swipeDirection by remember { mutableStateOf<SwipeDirection?>(null) }
     var isAnimating by remember { mutableStateOf(false) }
 
+    fun commitSwipe(direction: SwipeDirection) {
+        isAnimating = true
+        val targetX = if (direction == SwipeDirection.KEEP) screenWidth * 2 else -screenWidth * 2
+        scope.launch {
+            coroutineScope {
+                launch { offsetX.animateTo(targetX, AppMotion.cardSwipeOut) }
+                launch { offsetY.animateTo(0f, AppMotion.cardSwipeOut) }
+                launch {
+                    rotation.animateTo(
+                        if (direction == SwipeDirection.KEEP) 15f else -15f,
+                        AppMotion.cardSwipeOut,
+                    )
+                }
+                launch { scale.animateTo(0.95f, AppMotion.cardSwipeOut) }
+            }
+            isAnimating = false
+            onSwiped(direction)
+        }
+    }
+
+    fun snapBack() {
+        scope.launch {
+            offsetX.animateTo(0f, AppMotion.cardSnapBack)
+            offsetY.animateTo(0f, AppMotion.cardSnapBack)
+            rotation.animateTo(0f, AppMotion.cardSnapBack)
+            scale.animateTo(1f, AppMotion.cardSnapBack)
+            onSwipeProgress(0f)
+            swipeDirection = null
+        }
+    }
+
     Box(modifier = modifier) {
         Card(
             modifier = Modifier
@@ -71,26 +96,10 @@ fun SwipeableCard(
                             } else if (offsetX.value < -swipeThreshold) {
                                 commitSwipe(SwipeDirection.DELETE)
                             } else {
-                                scope.launch {
-                                    offsetX.animateTo(0f, AppMotion.cardSnapBack)
-                                    offsetY.animateTo(0f, AppMotion.cardSnapBack)
-                                    rotation.animateTo(0f, AppMotion.cardSnapBack)
-                                    scale.animateTo(1f, AppMotion.cardSnapBack)
-                                    onSwipeProgress(0f)
-                                    swipeDirection = null
-                                }
+                                snapBack()
                             }
                         },
-                        onDragCancel = {
-                            scope.launch {
-                                offsetX.animateTo(0f, AppMotion.cardSnapBack)
-                                offsetY.animateTo(0f, AppMotion.cardSnapBack)
-                                rotation.animateTo(0f, AppMotion.cardSnapBack)
-                                scale.animateTo(1f, AppMotion.cardSnapBack)
-                                onSwipeProgress(0f)
-                                swipeDirection = null
-                            }
-                        },
+                        onDragCancel = { snapBack() },
                         onDrag = { change, dragAmount ->
                             change.consume()
                             scope.launch {
@@ -99,7 +108,8 @@ fun SwipeableCard(
                                 offsetX.snapTo(newX)
                                 offsetY.snapTo(newY)
                                 rotation.snapTo(newX * 0.05f)
-                                val progress = (newX / swipeThreshold).coerceIn(-1f, 1f)
+                                val progress =
+                                    (newX / swipeThreshold).coerceIn(-1f, 1f)
                                 onSwipeProgress(progress)
                                 swipeDirection = when {
                                     progress > 0.3f -> SwipeDirection.KEEP
@@ -131,17 +141,4 @@ fun SwipeableCard(
 
         overlayContent(swipeDirection)
     }
-}
-
-private suspend fun Animatable<Float, *>.commitSwipe(
-    direction: SwipeDirection,
-    onSwiped: (SwipeDirection) -> Unit,
-    screenWidth: Float,
-) {
-    val targetX = if (direction == SwipeDirection.KEEP) screenWidth * 2 else -screenWidth * 2
-    launch { animateTo(targetX, AppMotion.cardSwipeOut) }
-    launch { animateTo(0f, AppMotion.cardSwipeOut) }
-    launch { animateTo(if (direction == SwipeDirection.KEEP) 15f else -15f, AppMotion.cardSwipeOut) }
-    launch { animateTo(0.95f, AppMotion.cardSwipeOut) }
-    onSwiped(direction)
 }
