@@ -5,6 +5,8 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import com.photosoap.android.domain.repository.SettingsRepository
@@ -49,6 +51,6 @@ fun rememberHapticsController(
     settingsRepository: SettingsRepository,
 ): HapticsController {
     val view = LocalView.current
-    val enabled = androidx.compose.runtime.collectAsState(settingsRepository.hapticsEnabled).value
+    val enabled by settingsRepository.hapticsEnabled.collectAsState(initial = false)
     return remember(enabled) { HapticsController(view, enabled) }
 }

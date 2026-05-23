@@ -41,6 +41,7 @@ class AchievementsViewModel @Inject constructor(
                     unlockedIds = ids.toSet(),
                     stats = stats,
                     unlockedCount = ids.size,
+                    totalCount = Achievement.ALL.size,
                 )
             }.collect { state ->
                 _uiState.value = state

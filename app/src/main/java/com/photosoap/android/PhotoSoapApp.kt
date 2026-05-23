@@ -8,6 +8,7 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import dagger.hilt.android.HiltAndroidApp
+import okio.Path.Companion.toPath
 
 @HiltAndroidApp
 class PhotoSoapApp : Application(), SingletonImageLoader.Factory {
@@ -23,11 +24,10 @@ class PhotoSoapApp : Application(), SingletonImageLoader.Factory {
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(cacheDir.resolve("image_cache"))
+                    .directory(cacheDir.resolve("image_cache").absolutePath.toPath())
                     .maxSizeBytes(100 * 1024 * 1024)
                     .build()
             }
-            .crossfade(true)
             .build()
     }
 }

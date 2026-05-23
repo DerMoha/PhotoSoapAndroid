@@ -10,7 +10,7 @@
 # Kotlin Serialization
 -keepattributes SerialDescriptor
 -keep class kotlinx.serialization.** { *; }
--keepclassmembers class com.photosoap.** {
+-keepclassmembers class com.photosoap.android.** {
     *** Companion;
 }
 

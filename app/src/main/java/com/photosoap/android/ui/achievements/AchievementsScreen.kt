@@ -99,12 +99,15 @@ fun AchievementsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(Achievement.ALL) { achievement ->
+                    val stats = state.stats
                     AchievementCard(
                         title = achievement.title,
                         description = achievement.description,
                         emoji = achievement.iconName,
                         isUnlocked = achievement.id in state.unlockedIds,
-                        progress = if (state.stats != null && achievement.isUnlocked(state.stats!!)) 1f else 0.5f,
+                        progress = if (stats != null && achievement.isUnlocked(stats)) 1f
+                            else if (stats != null) (achievement.progress(stats)).coerceIn(0f, 0.99f)
+                            else 0f,
                     )
                 }
             }

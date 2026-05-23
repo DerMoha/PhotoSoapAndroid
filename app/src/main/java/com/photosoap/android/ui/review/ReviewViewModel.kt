@@ -328,26 +328,29 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private suspend fun checkAchievements() {
-        val stats = _uiState.value.stats ?: statsRepository.getStats() ?: return
-        val unlocked = achievementRepository.getUnlockedIds().toSet()
-        val newlyUnlocked = Achievement.ALL
-            .filter { it.id !in unlocked && it.isUnlocked(stats) }
-            .map { it.id }
+    private fun checkAchievements() {
+        viewModelScope.launch {
+            val stats = _uiState.value.stats ?: statsRepository.getStats() ?: return@launch
+            val unlocked = achievementRepository.getUnlockedIds().toSet()
+            val newlyUnlocked = Achievement.ALL
+                .filter { it.id !in unlocked && it.isUnlocked(stats) }
+                .map { it.id }
 
-        for (id in newlyUnlocked) {
-            achievementRepository.unlock(id)
-            val achievement = Achievement.ALL.find { it.id == id }
-            if (achievement != null) {
+            if (newlyUnlocked.isNotEmpty()) {
+                for (id in newlyUnlocked) {
+                    achievementRepository.unlock(id)
+                }
+                val names = newlyUnlocked.mapNotNull { id ->
+                    Achievement.ALL.find { it.id == id }?.let { "${it.iconName} ${it.title}" }
+                }
+                val message = names.joinToString("\n") + " unlocked!"
                 _uiState.update {
                     it.copy(
-                        toastMessage = "${achievement.emoji} ${achievement.title} unlocked!",
-                        toastEmoji = achievement.emoji,
+                        toastMessage = message,
+                        toastEmoji = "🏆",
                     )
                 }
             }
-            kotlinx.coroutines.delay(3000)
-            _uiState.update { it.copy(toastMessage = null) }
         }
     }
 
@@ -402,8 +405,12 @@ class ReviewViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val photos = withContext(Dispatchers.IO) {
-                queryPhotos()
+            val photos = try {
+                withContext(Dispatchers.IO) {
+                    queryPhotos()
+                }
+            } catch (e: Exception) {
+                emptyList()
             }
 
             _uiState.update {

@@ -1,21 +1,18 @@
 package com.photosoap.android.ui.onboarding
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -29,12 +26,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.photosoap.android.R
 
 @Composable
 fun OnboardingScreen(
@@ -44,6 +42,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -69,14 +68,14 @@ fun OnboardingScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "PhotoSoap",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Clean up your photo library, one swipe at a time.",
+                text = stringResource(R.string.onboarding_subtitle),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
@@ -88,7 +87,7 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(
-                    text = "Get Started",
+                    text = stringResource(R.string.onboarding_get_started),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
@@ -98,9 +97,9 @@ fun OnboardingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                OnboardingFeature(icon = Icons.Filled.Swipe, text = "Swipe to review")
-                OnboardingFeature(icon = Icons.Filled.Lock, text = "100% Private")
-                OnboardingFeature(icon = Icons.Filled.EmojiEvents, text = "Earn achievements")
+                OnboardingFeature(icon = Icons.Filled.Swipe, text = stringResource(R.string.onboarding_swipe_desc))
+                OnboardingFeature(icon = Icons.Filled.Lock, text = stringResource(R.string.onboarding_privacy_title))
+                OnboardingFeature(icon = Icons.Filled.EmojiEvents, text = stringResource(R.string.onboarding_rewards_title))
             }
         }
     }

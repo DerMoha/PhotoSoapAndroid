@@ -4,6 +4,7 @@ import com.photosoap.android.data.local.datastore.SettingsDataStore
 import com.photosoap.android.data.local.db.dao.ReviewedPhotoDao
 import com.photosoap.android.data.local.db.dao.UnlockedAchievementDao
 import com.photosoap.android.data.local.db.dao.UserStatsDao
+import com.photosoap.android.data.remote.SupabaseApi
 import com.photosoap.android.data.repository.AchievementRepositoryImpl
 import com.photosoap.android.data.repository.MetricsRepositoryImpl
 import com.photosoap.android.data.repository.PhotoRepositoryImpl
@@ -52,5 +53,6 @@ object RepositoryModule {
     @Singleton
     fun provideMetricsRepository(
         settingsDataStore: SettingsDataStore,
-    ): MetricsRepository = MetricsRepositoryImpl(settingsDataStore)
+        supabaseApi: SupabaseApi,
+    ): MetricsRepository = MetricsRepositoryImpl(settingsDataStore, supabaseApi)
 }

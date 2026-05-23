@@ -70,6 +70,13 @@ fun ReviewScreen(
         }
     }
 
+    LaunchedEffect(state.toastMessage) {
+        if (state.toastMessage != null) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.onEvent(ReviewUiEvent.DismissToast)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             state.isLoading -> {
