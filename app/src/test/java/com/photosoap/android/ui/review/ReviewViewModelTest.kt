@@ -1,6 +1,8 @@
 package com.photosoap.android.ui.review
 
+import android.content.ContentResolver
 import android.content.Context
+import android.net.Uri
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.SortOrder
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewViewModelTest {
 
+    private val contentResolver = mockk<ContentResolver>(relaxed = true)
     private val context = mockk<Context>(relaxed = true)
     private val photoRepository = mockk<PhotoRepository>(relaxed = true)
     private val statsRepository = mockk<StatsRepository>(relaxed = true)
@@ -47,6 +50,7 @@ class ReviewViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { context.contentResolver } returns contentResolver
         every { settingsRepository.mediaKind } returns flowOf("all")
         every { settingsRepository.sortOrder } returns flowOf("newest_first")
         every { settingsRepository.useDeleteQueue } returns flowOf(true)

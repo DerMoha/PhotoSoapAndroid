@@ -1,6 +1,7 @@
 package com.photosoap.android.ui.review
 
 import android.content.IntentSender
+import com.photosoap.android.domain.model.AlbumInfo
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.PendingDeletionItem
 import com.photosoap.android.domain.model.Photo
@@ -8,6 +9,7 @@ import com.photosoap.android.domain.model.ReviewFilter
 import com.photosoap.android.domain.model.SortOrder
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.domain.model.UserStats
+import java.time.YearMonth
 
 data class ReviewUiState(
     val photos: List<Photo> = emptyList(),
@@ -17,6 +19,9 @@ data class ReviewUiState(
     val mediaKind: MediaKind = MediaKind.ALL,
     val sortOrder: SortOrder = SortOrder.NEWEST_FIRST,
     val filter: ReviewFilter = ReviewFilter.All,
+    val albums: List<AlbumInfo> = emptyList(),
+    val years: List<Int> = emptyList(),
+    val months: List<YearMonth> = emptyList(),
     val pendingDeletions: List<PendingDeletionItem> = emptyList(),
     val useDeleteQueue: Boolean = true,
     val stats: UserStats? = null,
@@ -33,6 +38,7 @@ data class ReviewUiState(
     val previewPhoto: Photo? = null,
     val pendingDeleteIntentSender: IntentSender? = null,
     val showDeveloperOptions: Boolean = false,
+    val selectedYear: Int? = null,
 ) {
     val currentPhoto: Photo?
         get() = if (currentIndex < photos.size) photos[currentIndex] else null
@@ -67,4 +73,6 @@ sealed interface ReviewUiEvent {
     data object StartOver : ReviewUiEvent
     data object DismissToast : ReviewUiEvent
     data object ToggleDeleteQueue : ReviewUiEvent
+    data class SelectYear(val year: Int) : ReviewUiEvent
+    data object DeselectYear : ReviewUiEvent
 }

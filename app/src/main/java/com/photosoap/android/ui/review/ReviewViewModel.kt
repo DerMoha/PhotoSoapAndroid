@@ -2,11 +2,15 @@ package com.photosoap.android.ui.review
 
 import android.content.ContentUris
 import android.content.Context
+import android.database.ContentObserver
 import android.database.Cursor
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.photosoap.android.domain.model.AlbumInfo
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.PendingDeletionItem
 import com.photosoap.android.domain.model.Photo
@@ -27,11 +31,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.YearMonth
 import java.util.UUID
 import javax.inject.Inject
 
@@ -51,10 +55,19 @@ class ReviewViewModel @Inject constructor(
     private var statsSnapshot: UserStats? = null
     private val reviewedInSession = mutableSetOf<String>()
 
+    private var mediaObserver: ContentObserver? = null
+
     init {
         loadSettings()
         loadPhotos()
+        loadFilterData()
         observeStats()
+        registerContentObserver()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        mediaObserver?.let { context.contentResolver.unregisterContentObserver(it) }
     }
 
     fun onEvent(event: ReviewUiEvent) {
@@ -78,6 +91,8 @@ class ReviewViewModel @Inject constructor(
             ReviewUiEvent.StartOver -> startOver()
             ReviewUiEvent.DismissToast -> _uiState.update { it.copy(toastMessage = null) }
             ReviewUiEvent.ToggleDeleteQueue -> toggleDeleteQueue()
+            is ReviewUiEvent.SelectYear -> selectYear(event.year)
+            ReviewUiEvent.DeselectYear -> deselectYear()
         }
     }
 
@@ -401,6 +416,128 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
+    private fun loadFilterData() {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    loadAlbums()
+                    loadYears()
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun selectYear(year: Int) {
+        _uiState.update { it.copy(selectedYear = year, months = emptyList()) }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                loadMonthsForYear(year)
+            }
+        }
+    }
+
+    private fun deselectYear() {
+        _uiState.update { it.copy(selectedYear = null, months = emptyList()) }
+    }
+
+    private fun loadMonthsForYear(year: Int) {
+        val uri = MediaStore.Files.getContentUri("external")
+        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN)
+        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
+            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+
+        val calendar = java.util.Calendar.getInstance()
+        val yearMonths = mutableSetOf<YearMonth>()
+
+        context.contentResolver.query(
+            uri, projection, selection, null,
+            "${MediaStore.Files.FileColumns.DATE_TAKEN} DESC"
+        )?.use { cursor ->
+            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_TAKEN)
+            while (cursor.moveToNext()) {
+                val dateTaken = cursor.getLong(dateCol)
+                calendar.timeInMillis = dateTaken
+                val yr = calendar.get(java.util.Calendar.YEAR)
+                if (yr != year) continue
+                val month = calendar.get(java.util.Calendar.MONTH) + 1
+                yearMonths.add(YearMonth.of(yr, month))
+            }
+        }
+        _uiState.update { it.copy(months = yearMonths.toList().sortedByDescending { m -> m.year * 12 + m.monthValue }) }
+    }
+
+    private fun loadAlbums() {
+        val uri = MediaStore.Files.getContentUri("external")
+        val projection = arrayOf(
+            "DISTINCT ${MediaStore.Files.FileColumns.BUCKET_ID}",
+            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
+        )
+        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
+            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+        val albums = mutableListOf<AlbumInfo>()
+
+        context.contentResolver.query(
+            uri, projection, selection, null,
+            "${MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME} ASC"
+        )?.use { cursor ->
+            val bucketIdCol = cursor.getColumnIndexOrThrow("DISTINCT ${MediaStore.Files.FileColumns.BUCKET_ID}")
+            val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            while (cursor.moveToNext()) {
+                albums.add(
+                    AlbumInfo(
+                        id = cursor.getLong(bucketIdCol),
+                        name = cursor.getString(bucketNameCol) ?: "Unknown",
+                        count = 0,
+                    )
+                )
+            }
+        }
+        _uiState.update { it.copy(albums = albums) }
+    }
+
+    private fun loadYears() {
+        val uri = MediaStore.Files.getContentUri("external")
+        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN)
+        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
+            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+        val years = mutableSetOf<Int>()
+
+        context.contentResolver.query(
+            uri, projection, selection, null,
+            "${MediaStore.Files.FileColumns.DATE_TAKEN} DESC"
+        )?.use { cursor ->
+            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_TAKEN)
+            while (cursor.moveToNext()) {
+                val dateTaken = cursor.getLong(dateCol)
+                val calendar = java.util.Calendar.getInstance().apply { timeInMillis = dateTaken }
+                val year = calendar.get(java.util.Calendar.YEAR)
+                if (years.add(year)) {
+                    if (years.size >= 50) break
+                }
+            }
+        }
+        _uiState.update { it.copy(years = years.toList().sortedDescending()) }
+    }
+
+    private fun registerContentObserver() {
+        try {
+            val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    loadPhotos()
+                    loadFilterData()
+                }
+
+                override fun onChange(selfChange: Boolean, uri: Uri?) {
+                    loadPhotos()
+                    loadFilterData()
+                }
+            }
+            mediaObserver = observer
+            val uri = MediaStore.Files.getContentUri("external")
+            context.contentResolver.registerContentObserver(uri, true, observer)
+        } catch (_: Exception) { }
+    }
+
     private fun loadPhotos() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -450,6 +587,42 @@ class ReviewViewModel @Inject constructor(
                 MediaKind.PHOTOS -> append(" AND ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}")
                 MediaKind.VIDEOS -> append(" AND ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO}")
                 MediaKind.ALL -> {}
+            }
+
+            when (val filter = state.filter) {
+                is ReviewFilter.All -> {}
+                is ReviewFilter.Year -> {
+                    val calendar = java.util.Calendar.getInstance()
+                    calendar.set(java.util.Calendar.YEAR, filter.year)
+                    calendar.set(java.util.Calendar.DAY_OF_YEAR, 1)
+                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    calendar.set(java.util.Calendar.MINUTE, 0)
+                    calendar.set(java.util.Calendar.SECOND, 0)
+                    calendar.set(java.util.Calendar.MILLISECOND, 0)
+                    val yearStart = calendar.timeInMillis
+                    calendar.add(java.util.Calendar.YEAR, 1)
+                    val yearEnd = calendar.timeInMillis
+                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} >= $yearStart")
+                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} < $yearEnd")
+                }
+                is ReviewFilter.Month -> {
+                    val calendar = java.util.Calendar.getInstance()
+                    calendar.set(java.util.Calendar.YEAR, filter.year)
+                    calendar.set(java.util.Calendar.MONTH, filter.month - 1)
+                    calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    calendar.set(java.util.Calendar.MINUTE, 0)
+                    calendar.set(java.util.Calendar.SECOND, 0)
+                    calendar.set(java.util.Calendar.MILLISECOND, 0)
+                    val monthStart = calendar.timeInMillis
+                    calendar.add(java.util.Calendar.MONTH, 1)
+                    val monthEnd = calendar.timeInMillis
+                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} >= $monthStart")
+                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} < $monthEnd")
+                }
+                is ReviewFilter.Album -> {
+                    append(" AND ${MediaStore.Files.FileColumns.BUCKET_ID} = ${filter.albumId}")
+                }
             }
         }
 

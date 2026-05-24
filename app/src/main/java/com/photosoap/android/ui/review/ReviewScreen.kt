@@ -213,8 +213,16 @@ fun ReviewScreen(
         FilterSheet(
             selectedKind = state.mediaKind,
             selectedSort = state.sortOrder,
+            selectedFilter = state.filter,
+            selectedYear = state.selectedYear,
+            albums = state.albums,
+            years = state.years,
+            months = state.months,
             onKindSelected = { viewModel.onEvent(ReviewUiEvent.ChangeMediaKind(it)) },
             onSortSelected = { viewModel.onEvent(ReviewUiEvent.ChangeSortOrder(it)) },
+            onFilterSelected = { viewModel.onEvent(ReviewUiEvent.ChangeFilter(it)) },
+            onYearSelected = { viewModel.onEvent(ReviewUiEvent.SelectYear(it)) },
+            onDeselectYear = { viewModel.onEvent(ReviewUiEvent.DeselectYear) },
             onDismiss = { viewModel.onEvent(ReviewUiEvent.CloseFilterSheet) },
         )
     }
