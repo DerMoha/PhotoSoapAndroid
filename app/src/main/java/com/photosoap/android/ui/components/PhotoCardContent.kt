@@ -5,20 +5,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,14 +33,15 @@ fun PhotoCardContent(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(440.dp),
     ) {
         AsyncImage(
             model = photo.uri,
             contentDescription = photo.displayName,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp),
+                .fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
 
@@ -61,12 +62,12 @@ fun PhotoCardContent(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (photo.isVideo) {
                     Icon(
-                        imageVector = Icons.Filled.PhotoLibrary,
+                        imageVector = Icons.Filled.Videocam,
                         contentDescription = "Video",
                         tint = androidx.compose.ui.graphics.Color.White,
                         modifier = Modifier.size(16.dp),
                     )
-                    Spacer(modifier = Modifier.padding(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
                 Text(
                     text = photo.displayName,
@@ -85,7 +86,7 @@ fun PhotoCardContent(
                     color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f),
                 )
                 if (photo.isVideo) {
-                    Spacer(modifier = Modifier.padding(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = photo.formattedDuration,
                         style = MaterialTheme.typography.bodySmall,

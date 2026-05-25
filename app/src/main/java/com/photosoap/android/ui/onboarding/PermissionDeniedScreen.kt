@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.onboarding
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,8 +29,11 @@ import com.photosoap.android.R
 
 @Composable
 fun PermissionDeniedScreen(
-    onOpenSettings: () -> Unit,
+    settingsIntent: Intent,
+    onDismiss: () -> Unit = {},
 ) {
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -61,7 +66,10 @@ fun PermissionDeniedScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onOpenSettings) {
+            Button(onClick = {
+                context.startActivity(settingsIntent)
+                onDismiss()
+            }) {
                 Text(stringResource(R.string.onboarding_permission_open_settings))
             }
         }

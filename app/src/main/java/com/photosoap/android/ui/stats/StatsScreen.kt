@@ -35,11 +35,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.photosoap.android.ui.components.StatCard
+import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,7 +99,7 @@ fun StatsScreen(
                     StatCard(
                         title = "Photos Deleted",
                         value = "${state.stats?.totalDeleted ?: 0}",
-                        accentColor = Color(0xFFF44336),
+                        accentColor = AppColors.Delete,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -111,13 +111,13 @@ fun StatsScreen(
                     StatCard(
                         title = "Photos Kept",
                         value = "${state.stats?.totalKept ?: 0}",
-                        accentColor = Color(0xFF4CAF50),
+                        accentColor = AppColors.Keep,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
                         title = "Storage Freed",
                         value = FileSize.format(state.stats?.storageFreed ?: 0),
-                        accentColor = Color(0xFF9C27B0),
+                        accentColor = AppColors.Achievement,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -136,13 +136,13 @@ fun StatsScreen(
                     StatCard(
                         title = "Reviewed Today",
                         value = "${state.stats?.todayReviewCount ?: 0}",
-                        accentColor = Color(0xFFFF9800),
+                        accentColor = AppColors.Warning,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
                         title = "Best Day",
                         value = "${state.stats?.bestDayReviewCount ?: 0}",
-                        accentColor = Color(0xFFE65100),
+                        accentColor = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -154,13 +154,13 @@ fun StatsScreen(
                     StatCard(
                         title = "Best Streak",
                         value = "${state.stats?.bestStreak ?: 0}",
-                        accentColor = Color(0xFFF44336),
+                        accentColor = AppColors.Warning,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
                         title = "Day Streak",
                         value = "${state.stats?.dayStreak ?: 0}",
-                        accentColor = Color(0xFF9C27B0),
+                        accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -182,15 +182,15 @@ fun StatsScreen(
                     Row(modifier = Modifier.fillMaxSize()) {
                         Box(
                             modifier = Modifier
-                                .weight(state.keepDeleteRatio)
+                                .weight(state.keepDeleteRatio.coerceAtLeast(0.001f))
                                 .fillMaxSize()
-                                .background(Color(0xFF4CAF50)),
+                                .background(AppColors.Keep),
                         )
                         Box(
                             modifier = Modifier
-                                .weight(1f - state.keepDeleteRatio)
+                                .weight((1f - state.keepDeleteRatio).coerceAtLeast(0.001f))
                                 .fillMaxSize()
-                                .background(Color(0xFFF44336)),
+                                .background(AppColors.Delete),
                         )
                     }
                 }
@@ -204,7 +204,7 @@ fun StatsScreen(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFF4CAF50)),
+                                .background(AppColors.Keep),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -217,7 +217,7 @@ fun StatsScreen(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFFF44336)),
+                                .background(AppColors.Delete),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(

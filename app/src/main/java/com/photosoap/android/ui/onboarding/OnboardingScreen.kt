@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.photosoap.android.R
 
@@ -93,13 +94,22 @@ fun OnboardingScreen(
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                OnboardingFeature(icon = Icons.Filled.Swipe, text = stringResource(R.string.onboarding_swipe_desc))
-                OnboardingFeature(icon = Icons.Filled.Lock, text = stringResource(R.string.onboarding_privacy_title))
-                OnboardingFeature(icon = Icons.Filled.EmojiEvents, text = stringResource(R.string.onboarding_rewards_title))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                OnboardingFeature(
+                    icon = Icons.Filled.Swipe,
+                    text = stringResource(R.string.onboarding_swipe_desc),
+                    modifier = Modifier.weight(1f),
+                )
+                OnboardingFeature(
+                    icon = Icons.Filled.Lock,
+                    text = stringResource(R.string.onboarding_privacy_title),
+                    modifier = Modifier.weight(1f),
+                )
+                OnboardingFeature(
+                    icon = Icons.Filled.EmojiEvents,
+                    text = stringResource(R.string.onboarding_rewards_title),
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -109,8 +119,12 @@ fun OnboardingScreen(
 private fun OnboardingFeature(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
+    modifier: Modifier = Modifier,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
@@ -122,6 +136,9 @@ private fun OnboardingFeature(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

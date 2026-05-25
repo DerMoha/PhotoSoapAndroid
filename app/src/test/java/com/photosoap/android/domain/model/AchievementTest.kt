@@ -57,8 +57,41 @@ class AchievementTest {
     }
 
     @Test
+    fun `progress computes correct fraction`() {
+        val stats = UserStats(totalReviewed = 25)
+        val achievement = Achievement.ALL.find { it.id == "first_steps" }!!
+        assertEquals(0.5f, achievement.progress(stats))
+    }
+
+    @Test
+    fun `isUnlocked at exactly boundary returns true`() {
+        val stats = UserStats(totalDeleted = 200)
+        val achievement = Achievement.ALL.find { it.id == "spring_cleaning" }!!
+        assertTrue(achievement.isUnlocked(stats))
+    }
+
+    @Test
+    fun `isUnlocked at boundary minus one returns false`() {
+        val stats = UserStats(bestStreak = 99)
+        val achievement = Achievement.ALL.find { it.id == "streak_master" }!!
+        assertFalse(achievement.isUnlocked(stats))
+    }
+
+    @Test
     fun `daily challenge generates valid targets`() {
         val challenge = DailyChallenge.generate()
         assertTrue(challenge.target in 10..50)
+    }
+
+    @Test
+    fun `daily challenge type matches target range`() {
+        repeat(20) {
+            val challenge = DailyChallenge.generate()
+            when (challenge.type) {
+                DailyChallenge.ChallengeType.REVIEW -> assertTrue(challenge.target in 20..50, "review target ${challenge.target} out of range")
+                DailyChallenge.ChallengeType.DELETE -> assertTrue(challenge.target in 10..25, "delete target ${challenge.target} out of range")
+                DailyChallenge.ChallengeType.STREAK -> assertTrue(challenge.target in 10..25, "streak target ${challenge.target} out of range")
+            }
+        }
     }
 }

@@ -28,4 +28,10 @@ class FileSizeTest {
     fun `format gigabytes`() {
         assertEquals("1.00 GB", FileSize.format(1024L * 1024L * 1024L))
     }
+
+    @Test
+    fun `boundary between bytes and kilobytes`() {
+        assertEquals("1023 B", FileSize.format(1023))
+        assertEquals("1 KB", FileSize.format(1024))
+    }
 }

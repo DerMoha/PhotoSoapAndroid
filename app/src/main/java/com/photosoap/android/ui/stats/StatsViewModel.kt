@@ -28,7 +28,7 @@ class StatsViewModel @Inject constructor(
             statsRepository.observeStats().collect { stats ->
                 val ratio = if (stats != null && (stats.totalKept + stats.totalDeleted) > 0) {
                     stats.totalKept.toFloat() / (stats.totalKept + stats.totalDeleted).toFloat()
-                } else 0f
+                } else 0.5f
 
                 _uiState.update {
                     it.copy(

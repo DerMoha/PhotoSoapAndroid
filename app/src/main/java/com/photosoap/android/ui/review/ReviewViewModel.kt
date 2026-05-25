@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import java.util.UUID
@@ -52,6 +54,7 @@ class ReviewViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
 
+    private val statsMutex = Mutex()
     private var statsSnapshot: UserStats? = null
     private val reviewedInSession = mutableSetOf<String>()
 
@@ -105,16 +108,17 @@ class ReviewViewModel @Inject constructor(
             SwipeDirection.KEEP -> {
                 reviewInSession(photo.uri)
                 advanceStats(kept = true)
+                viewModelScope.launch { metricsRepository.trackReview() }
             }
             SwipeDirection.DELETE -> {
-                if (_uiState.value.useDeleteQueue) {
-                    reviewInSession(photo.uri)
-                    advanceStats(deleted = true, fileSize = photo.fileSize)
-                    addToDeletionQueue(photo)
-                } else {
-                    reviewInSession(photo.uri)
-                    advanceStats(deleted = true, fileSize = photo.fileSize)
-                    // Immediate delete - would use createDeleteRequest
+                reviewInSession(photo.uri)
+                advanceStats(deleted = true, fileSize = photo.fileSize)
+                addToDeletionQueue(photo)
+                viewModelScope.launch {
+                    metricsRepository.trackDeletion(photo.fileSize)
+                }
+                if (!_uiState.value.useDeleteQueue) {
+                    executeDeletion()
                 }
             }
         }
@@ -154,33 +158,51 @@ class ReviewViewModel @Inject constructor(
 
     private fun advanceStats(kept: Boolean = false, deleted: Boolean = false, fileSize: Long = 0) {
         viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val current = statsRepository.getStats() ?: statsRepository.createIfNeeded()
-            val todayStart = java.time.LocalDate.now()
-                .atStartOfDay(java.time.ZoneId.systemDefault())
-                .toInstant().toEpochMilli()
+            statsMutex.withLock {
+                val now = System.currentTimeMillis()
+                val current = statsRepository.getStats() ?: statsRepository.createIfNeeded()
+                val todayStart = java.time.LocalDate.now()
+                    .atStartOfDay(java.time.ZoneId.systemDefault())
+                    .toInstant().toEpochMilli()
 
-            val updated = current.copy(
-                totalReviewed = current.totalReviewed + 1,
-                totalKept = if (kept) current.totalKept + 1 else current.totalKept,
-                totalDeleted = if (deleted) current.totalDeleted + 1 else current.totalDeleted,
-                storageFreed = current.storageFreed + fileSize,
-                sessionReviewCount = current.sessionReviewCount + 1,
-                currentStreak = current.currentStreak + 1,
-                bestStreak = maxOf(current.bestStreak, current.currentStreak + 1),
-                todayReviewCount = if (current.todayDate == todayStart) {
-                    current.todayReviewCount + 1
-                } else 1,
-                todayDate = todayStart,
-                bestDayReviewCount = maxOf(current.bestDayReviewCount, current.todayReviewCount + 1),
-            )
+                val isNewDay = current.todayDate != todayStart
+                val newTodayCount = if (isNewDay) 1 else current.todayReviewCount + 1
 
-            statsRepository.updateStats(updated)
-            _uiState.update {
-                it.copy(
-                    stats = updated,
-                    todayReviewCount = updated.todayReviewCount,
+                val newDayStreak = when {
+                    current.lastReviewDate == null -> 1
+                    else -> {
+                        val lastReviewDay = java.time.Instant.ofEpochMilli(current.lastReviewDate)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+                        val daysSince = java.time.temporal.ChronoUnit.DAYS.between(lastReviewDay, today)
+                        if (daysSince <= 1L) current.dayStreak + (if (daysSince == 1L || isNewDay) 1 else 0)
+                        else 1
+                    }
+                }
+
+                val updated = current.copy(
+                    totalReviewed = current.totalReviewed + 1,
+                    totalKept = if (kept) current.totalKept + 1 else current.totalKept,
+                    totalDeleted = if (deleted) current.totalDeleted + 1 else current.totalDeleted,
+                    storageFreed = current.storageFreed + fileSize,
+                    sessionReviewCount = current.sessionReviewCount + 1,
+                    currentStreak = current.currentStreak + 1,
+                    bestStreak = maxOf(current.bestStreak, current.currentStreak + 1),
+                    todayReviewCount = newTodayCount,
+                    todayDate = todayStart,
+                    bestDayReviewCount = maxOf(current.bestDayReviewCount, newTodayCount),
+                    dayStreak = newDayStreak,
+                    lastReviewDate = now,
                 )
+
+                statsRepository.updateStats(updated)
+                _uiState.update {
+                    it.copy(
+                        stats = updated,
+                        todayReviewCount = updated.todayReviewCount,
+                    )
+                }
             }
         }
     }
@@ -199,25 +221,26 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun undoLastDeletion() {
-        _uiState.update { state ->
-            if (state.pendingDeletions.isEmpty()) return@update state
-            val last = state.pendingDeletions.last()
-            viewModelScope.launch {
-                photoRepository.unmarkReviewed(last.uri)
-                reviewedInSession.remove(last.uri)
-            }
-            state.copy(pendingDeletions = state.pendingDeletions.dropLast(1))
+        val last = _uiState.value.pendingDeletions.lastOrNull() ?: return
+        _uiState.update { it.copy(pendingDeletions = it.pendingDeletions.dropLast(1)) }
+        viewModelScope.launch {
+            photoRepository.unmarkReviewed(last.uri)
+            reviewedInSession.remove(last.uri)
+            revertDeletionStats(last.fileSize)
         }
-        rollbackStats()
     }
 
-    private fun rollbackStats() {
-        statsSnapshot?.let { snapshot ->
-            viewModelScope.launch {
-                statsRepository.updateStats(snapshot)
-                _uiState.update { it.copy(stats = snapshot) }
+    private fun revertDeletionStats(fileSize: Long) {
+        viewModelScope.launch {
+            statsMutex.withLock {
+                val current = statsRepository.getStats() ?: return@launch
+                val updated = current.copy(
+                    totalDeleted = (current.totalDeleted - 1).coerceAtLeast(0),
+                    storageFreed = (current.storageFreed - fileSize).coerceAtLeast(0),
+                )
+                statsRepository.updateStats(updated)
+                _uiState.update { it.copy(stats = updated) }
             }
-            statsSnapshot = null
         }
     }
 
@@ -245,6 +268,29 @@ class ReviewViewModel @Inject constructor(
                         toastEmoji = "❌",
                         showDeleteConfirmSheet = false,
                     )
+                }
+            }
+        } else {
+            viewModelScope.launch {
+                var deletedCount = 0
+                withContext(Dispatchers.IO) {
+                    for (uri in uris) {
+                        try {
+                            val rows = context.contentResolver.delete(uri, null, null)
+                            if (rows > 0) deletedCount++
+                        } catch (_: Exception) { }
+                    }
+                }
+                if (deletedCount > 0) {
+                    onDeletionComplete(true)
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            toastMessage = "Manual deletion required on this device",
+                            toastEmoji = "⚠️",
+                            showDeleteConfirmSheet = false,
+                        )
+                    }
                 }
             }
         }
@@ -277,17 +323,13 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun removeFromQueue(itemId: String) {
-        _uiState.update { state ->
-            val item = state.pendingDeletions.find { it.id == itemId }
-            if (item != null) {
-                viewModelScope.launch {
-                    photoRepository.unmarkReviewed(item.uri)
-                    reviewedInSession.remove(item.uri)
-                }
-            }
-            state.copy(pendingDeletions = state.pendingDeletions.filter { it.id != itemId })
+        val item = _uiState.value.pendingDeletions.find { it.id == itemId } ?: return
+        _uiState.update { it.copy(pendingDeletions = it.pendingDeletions.filter { i -> i.id != itemId }) }
+        viewModelScope.launch {
+            photoRepository.unmarkReviewed(item.uri)
+            reviewedInSession.remove(item.uri)
+            revertDeletionStats(item.fileSize)
         }
-        rollbackStats()
     }
 
     private fun clearQueue() {
@@ -296,8 +338,17 @@ class ReviewViewModel @Inject constructor(
         viewModelScope.launch {
             items.forEach { photoRepository.unmarkReviewed(it.uri) }
             reviewedInSession.removeAll(items.map { it.uri }.toSet())
+            statsMutex.withLock {
+                val totalSize = items.sumOf { it.fileSize }
+                val current = statsRepository.getStats() ?: return@launch
+                val updated = current.copy(
+                    totalDeleted = (current.totalDeleted - items.size).coerceAtLeast(0),
+                    storageFreed = (current.storageFreed - totalSize).coerceAtLeast(0),
+                )
+                statsRepository.updateStats(updated)
+                _uiState.update { it.copy(stats = updated) }
+            }
         }
-        rollbackStats()
     }
 
     private fun changeMediaKind(kind: MediaKind) {
@@ -369,6 +420,8 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
+    private var dailyChallengeToastShown = false
+
     private fun checkDailyChallenge() {
         viewModelScope.launch {
             val stats = statsRepository.getStats() ?: return@launch
@@ -387,15 +440,14 @@ class ReviewViewModel @Inject constructor(
                 )
             }
 
-            if (progress >= challenge.target) {
+            if (progress >= challenge.target && !dailyChallengeToastShown) {
+                dailyChallengeToastShown = true
                 _uiState.update {
                     it.copy(
-                        toastMessage = "Daily goal complete! 🎉",
+                        toastMessage = "Daily goal complete!",
                         toastEmoji = "🎉",
                     )
                 }
-                kotlinx.coroutines.delay(3000)
-                _uiState.update { it.copy(toastMessage = null) }
             }
         }
     }
@@ -469,27 +521,31 @@ class ReviewViewModel @Inject constructor(
     private fun loadAlbums() {
         val uri = MediaStore.Files.getContentUri("external")
         val projection = arrayOf(
-            "DISTINCT ${MediaStore.Files.FileColumns.BUCKET_ID}",
+            MediaStore.Files.FileColumns.BUCKET_ID,
             MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
         )
         val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
             " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+        val seenIds = mutableSetOf<Long>()
         val albums = mutableListOf<AlbumInfo>()
 
         context.contentResolver.query(
             uri, projection, selection, null,
             "${MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME} ASC"
         )?.use { cursor ->
-            val bucketIdCol = cursor.getColumnIndexOrThrow("DISTINCT ${MediaStore.Files.FileColumns.BUCKET_ID}")
+            val bucketIdCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_ID)
             val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
             while (cursor.moveToNext()) {
-                albums.add(
-                    AlbumInfo(
-                        id = cursor.getLong(bucketIdCol),
-                        name = cursor.getString(bucketNameCol) ?: "Unknown",
-                        count = 0,
+                val bucketId = cursor.getLong(bucketIdCol)
+                if (seenIds.add(bucketId)) {
+                    albums.add(
+                        AlbumInfo(
+                            id = bucketId,
+                            name = cursor.getString(bucketNameCol) ?: "Unknown",
+                            count = 0,
+                        )
                     )
-                )
+                }
             }
         }
         _uiState.update { it.copy(albums = albums) }
@@ -544,7 +600,8 @@ class ReviewViewModel @Inject constructor(
 
             val photos = try {
                 withContext(Dispatchers.IO) {
-                    queryPhotos()
+                    val reviewedUris = photoRepository.observeReviewedPhotoUris().first()
+                    queryPhotos().filter { it.uri !in reviewedUris }
                 }
             } catch (e: Exception) {
                 emptyList()
@@ -565,7 +622,6 @@ class ReviewViewModel @Inject constructor(
         val state = _uiState.value
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
-            MediaStore.Files.FileColumns.DATA,
             MediaStore.Files.FileColumns.DISPLAY_NAME,
             MediaStore.Files.FileColumns.MIME_TYPE,
             MediaStore.Files.FileColumns.DATE_TAKEN,

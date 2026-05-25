@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.PendingDeletionItem
+import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +68,7 @@ fun DeleteQueueSheet(
                     fontWeight = FontWeight.Bold,
                 )
                 TextButton(onClick = onClearAll) {
-                    Text("Clear All", color = MaterialTheme.colorScheme.error)
+                    Text("Clear All", color = AppColors.Delete)
                 }
             }
 
@@ -121,7 +122,8 @@ fun DeleteQueueSheet(
                 onClick = onDelete,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
+                    containerColor = AppColors.Delete,
+                    contentColor = AppColors.OnDelete,
                 ),
             ) {
                 Icon(Icons.Filled.Delete, contentDescription = null)

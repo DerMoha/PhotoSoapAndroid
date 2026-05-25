@@ -59,6 +59,7 @@ class PhotoTest {
 
         assertEquals("512 B", bytes.formattedFileSize)
         assertEquals("1 KB", kb.formattedFileSize)
+        assertEquals("2.4 MB", mb.formattedFileSize)
     }
 
     @Test

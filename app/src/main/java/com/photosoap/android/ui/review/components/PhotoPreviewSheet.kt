@@ -63,8 +63,9 @@ fun PhotoPreviewSheet(
                         val newScale = (scale * zoom).coerceIn(1f, 5f)
                         scale = newScale
                         if (newScale > 1f) {
-                            offsetX += pan.x
-                            offsetY += pan.y
+                            val maxOffset = (size.width * (newScale - 1f)) / 2f
+                            offsetX = (offsetX + pan.x).coerceIn(-maxOffset, maxOffset)
+                            offsetY = (offsetY + pan.y).coerceIn(-maxOffset, maxOffset)
                         } else {
                             offsetX = 0f
                             offsetY = 0f

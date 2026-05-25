@@ -1,6 +1,5 @@
 package com.photosoap.android.domain.repository
 
-import com.photosoap.android.data.remote.dto.MetricsPayload
 import kotlinx.coroutines.flow.Flow
 
 interface MetricsRepository {

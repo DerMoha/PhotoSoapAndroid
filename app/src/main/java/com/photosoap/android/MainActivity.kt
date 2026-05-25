@@ -11,6 +11,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.compose.rememberNavController
 import com.photosoap.android.navigation.AppNavHost
 import com.photosoap.android.ui.components.PermissionGate
@@ -30,6 +32,11 @@ class MainActivity : ComponentActivity() {
             PhotoSoapTheme {
                 val viewModel: MainViewModel = hiltViewModel()
                 val state by viewModel.uiState.collectAsState()
+                val navController = rememberNavController()
+
+                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                    viewModel.onResume()
+                }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -43,20 +50,20 @@ class MainActivity : ComponentActivity() {
                         }
 
                         is MainUiState.PermissionRequest -> {
-                            OnboardingScreen(
-                                onGetStarted = viewModel::onGetStarted,
-                                showPermissionRequest = true,
-                            )
+                            PermissionGate(
+                                isGranted = false,
+                                onResult = viewModel::onPermissionResult,
+                            ) { }
                         }
 
                         is MainUiState.PermissionDenied -> {
                             PermissionDeniedScreen(
-                                onOpenSettings = viewModel::onOpenSettings,
+                                settingsIntent = viewModel.onOpenSettings(),
+                                onDismiss = viewModel::onSettingsDismissed,
                             )
                         }
 
                         is MainUiState.Main -> {
-                            val navController = rememberNavController()
                             AppNavHost(navController = navController)
                         }
                     }

@@ -51,11 +51,20 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun onOpenSettings() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+    fun onOpenSettings(): Intent {
+        return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", "com.photosoap.android", null)
         }
-        // This would be launched from the composable with context
+    }
+
+    fun onSettingsDismissed() {
+        viewModelScope.launch { checkPermissionAndNavigate() }
+    }
+
+    fun onResume() {
+        if (_uiState.value is MainUiState.PermissionDenied) {
+            viewModelScope.launch { checkPermissionAndNavigate() }
+        }
     }
 
     private suspend fun checkPermissionAndNavigate() {

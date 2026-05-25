@@ -1,32 +1,88 @@
 package com.photosoap.android.ui.settings
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.photosoap.android.domain.repository.SettingsRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
 
-    @Test
-    fun `uiState reflects initial flows`() = runTest {
-        // Verify the SettingsUiState data class works correctly
-        val state = SettingsUiState(
-            hapticsEnabled = true,
-            useDeleteQueue = true,
-            analyticsEnabled = false,
-        )
-        assertEquals(true, state.hapticsEnabled)
-        assertEquals(true, state.useDeleteQueue)
-        assertEquals(false, state.analyticsEnabled)
+    private val settingsRepository = mockk<SettingsRepository>()
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @BeforeEach
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        every { settingsRepository.hapticsEnabled } returns flowOf(true)
+        every { settingsRepository.useDeleteQueue } returns flowOf(true)
+        every { settingsRepository.analyticsEnabled } returns flowOf(false)
+        coEvery { settingsRepository.setHapticsEnabled(any()) } returns Unit
+        coEvery { settingsRepository.setUseDeleteQueue(any()) } returns Unit
+        coEvery { settingsRepository.setAnalyticsEnabled(any()) } returns Unit
+        coEvery { settingsRepository.resetOnboarding() } returns Unit
+    }
+
+    @AfterEach
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `settings state copy works`() {
-        val state = SettingsUiState()
-        val modified = state.copy(analyticsEnabled = true)
-        assertEquals(true, modified.analyticsEnabled)
-        assertEquals(true, modified.hapticsEnabled)
-        assertEquals(true, modified.useDeleteQueue)
+    fun `initial state reflects default flows`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(settingsRepository)
+        val state = vm.uiState.value
+        assertTrue(state.hapticsEnabled)
+        assertTrue(state.useDeleteQueue)
+        assertFalse(state.analyticsEnabled)
+    }
+
+    @Test
+    fun `toggle haptics calls repository`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(settingsRepository)
+        vm.toggleHaptics(false)
+        coVerify { settingsRepository.setHapticsEnabled(false) }
+    }
+
+    @Test
+    fun `toggle delete queue calls repository`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(settingsRepository)
+        vm.toggleDeleteQueue(false)
+        coVerify { settingsRepository.setUseDeleteQueue(false) }
+    }
+
+    @Test
+    fun `toggle analytics calls repository`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(settingsRepository)
+        vm.toggleAnalytics(true)
+        coVerify { settingsRepository.setAnalyticsEnabled(true) }
+    }
+
+    @Test
+    fun `reset onboarding calls repository`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(settingsRepository)
+        vm.resetOnboarding()
+        coVerify { settingsRepository.resetOnboarding() }
+    }
+
+    @Test
+    fun `new flows update state`() = runTest(testDispatcher) {
+        every { settingsRepository.analyticsEnabled } returns flowOf(true)
+        val vm = SettingsViewModel(settingsRepository)
+        assertEquals(true, vm.uiState.value.analyticsEnabled)
     }
 }

@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -27,7 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.photosoap.android.domain.model.PendingDeletionItem
+import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
 @Composable
@@ -42,7 +42,7 @@ fun DeleteQueueTray(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = AppColors.DeleteContainer,
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             )
             .padding(12.dp),
@@ -54,30 +54,30 @@ fun DeleteQueueTray(
                 text = "$itemCount",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                color = AppColors.OnDeleteContainer,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "items to delete (${FileSize.format(totalFileSize)})",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                color = AppColors.OnDeleteContainer,
             )
         }
         Row {
             Icon(
-                imageVector = Icons.Filled.Undo,
+                imageVector = Icons.AutoMirrored.Filled.Undo,
                 contentDescription = "Undo",
                 modifier = Modifier
                     .size(24.dp)
                     .clickable(onClick = onUndo),
-                tint = MaterialTheme.colorScheme.onErrorContainer,
+                tint = AppColors.OnDeleteContainer,
             )
             Spacer(modifier = Modifier.width(12.dp))
             Button(
                 onClick = onViewList,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onErrorContainer,
-                    contentColor = MaterialTheme.colorScheme.errorContainer,
+                    containerColor = AppColors.OnDeleteContainer,
+                    contentColor = AppColors.DeleteContainer,
                 ),
             ) {
                 Text("List")

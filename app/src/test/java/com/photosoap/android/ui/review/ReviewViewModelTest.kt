@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.domain.model.MediaKind
+import com.photosoap.android.domain.model.ReviewFilter
 import com.photosoap.android.domain.model.SortOrder
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.domain.model.UserStats
@@ -28,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -76,7 +78,7 @@ class ReviewViewModelTest {
     )
 
     @Test
-    fun `initial state has loading false after photo query failure`() = runTest(testDispatcher) {
+    fun `initial state is created`() = runTest(testDispatcher) {
         val vm = createViewModel()
         assertNotNull(vm.uiState.value)
     }
@@ -130,5 +132,34 @@ class ReviewViewModelTest {
         vm.onEvent(ReviewUiEvent.TappedCard)
         vm.onEvent(ReviewUiEvent.ClosePhotoPreview)
         assertTrue(!vm.uiState.value.showPhotoPreview)
+    }
+
+    @Test
+    fun `toggle delete queue flips useDeleteQueue`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.ToggleDeleteQueue)
+        assertFalse(vm.uiState.value.useDeleteQueue)
+    }
+
+    @Test
+    fun `change filter updates state`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.ChangeFilter(ReviewFilter.Year(2023)))
+        assertEquals(ReviewFilter.Year(2023), vm.uiState.value.filter)
+    }
+
+    @Test
+    fun `open delete queue shows sheet`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.OpenDeleteQueue)
+        assertTrue(vm.uiState.value.showDeleteQueueSheet)
+    }
+
+    @Test
+    fun `dismiss delete queue hides sheet`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.OpenDeleteQueue)
+        vm.onEvent(ReviewUiEvent.DismissDeleteQueue)
+        assertFalse(vm.uiState.value.showDeleteQueueSheet)
     }
 }

@@ -52,5 +52,5 @@ fun rememberHapticsController(
 ): HapticsController {
     val view = LocalView.current
     val enabled by settingsRepository.hapticsEnabled.collectAsState(initial = false)
-    return remember(enabled) { HapticsController(view, enabled) }
+    return remember(view, enabled) { HapticsController(view, enabled) }
 }

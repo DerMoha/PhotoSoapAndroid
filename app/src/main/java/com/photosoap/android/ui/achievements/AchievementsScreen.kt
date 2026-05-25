@@ -34,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.ui.components.AchievementCard
 import com.photosoap.android.ui.components.ProgressRing
+import com.photosoap.android.ui.theme.AppColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,8 +60,9 @@ fun AchievementsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
             ) {
                 Column(
@@ -108,6 +110,7 @@ fun AchievementsScreen(
                         progress = if (stats != null && achievement.isUnlocked(stats)) 1f
                             else if (stats != null) (achievement.progress(stats)).coerceIn(0f, 0.99f)
                             else 0f,
+                        onClick = { selectedAchievement = achievement },
                     )
                 }
             }
@@ -115,11 +118,13 @@ fun AchievementsScreen(
     }
 
     if (selectedAchievement != null) {
-        AchievementDetailSheet(
-            achievement = selectedAchievement!!,
-            isUnlocked = selectedAchievement!!.id in state.unlockedIds,
-            onDismiss = { selectedAchievement = null },
-        )
+        selectedAchievement?.let { achievement ->
+            AchievementDetailSheet(
+                achievement = achievement,
+                isUnlocked = achievement.id in state.unlockedIds,
+                onDismiss = { selectedAchievement = null },
+            )
+        }
     }
 }
 
@@ -161,7 +166,7 @@ private fun AchievementDetailSheet(
                 Text(
                     text = "✓ Unlocked",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = AppColors.Keep,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

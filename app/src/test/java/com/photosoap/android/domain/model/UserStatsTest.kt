@@ -39,4 +39,20 @@ class UserStatsTest {
         assertEquals(0, stats.todayReviewCount)
         assertEquals(0, stats.bestDayReviewCount)
     }
+
+    @Test
+    fun `daily challenge fields default to zero and null`() {
+        val stats = UserStats()
+        assertEquals(0, stats.dailyChallengeProgress)
+        assertEquals(0, stats.dailyChallengeTarget)
+        assertEquals("review", stats.dailyChallengeType)
+        assertEquals(null, stats.dailyChallengeDate)
+    }
+
+    @Test
+    fun `nullable date fields are null by default`() {
+        val stats = UserStats()
+        assertEquals(null, stats.lastReviewDate)
+        assertEquals(null, stats.todayDate)
+    }
 }

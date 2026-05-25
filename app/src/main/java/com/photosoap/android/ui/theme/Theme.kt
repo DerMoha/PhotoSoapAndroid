@@ -10,80 +10,94 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-val Blue40 = Color(0xFF1565C0)
-val BlueGrey40 = Color(0xFF546E7A)
-val Green40 = Color(0xFF2E7D32)
-val Red40 = Color(0xFFC62828)
-val Orange40 = Color(0xFFE65100)
-val Purple40 = Color(0xFF6A1B9A)
-val Yellow40 = Color(0xFFF9A825)
+object AppColors {
+    val Keep = Color(0xFF0E7C66)
+    val OnKeep = Color.White
+    val KeepContainer = Color(0xFFCFEDE5)
+    val OnKeepContainer = Color(0xFF002019)
 
-val Blue80 = Color(0xFF90CAF9)
-val BlueGrey80 = Color(0xFFB0BEC5)
-val Green80 = Color(0xFFA5D6A7)
-val Red80 = Color(0xFFEF9A9A)
-val Orange80 = Color(0xFFFFCC80)
-val Purple80 = Color(0xFFCE93D8)
-val Yellow80 = Color(0xFFFFF59D)
+    val Delete = Color(0xFFB13A2B)
+    val OnDelete = Color.White
+    val DeleteContainer = Color(0xFFFFDAD4)
+    val OnDeleteContainer = Color(0xFF410002)
+
+    val Warning = Color(0xFF8B5E00)
+    val WarningContainer = Color(0xFFFFDEA6)
+    val OnWarningContainer = Color(0xFF2C1B00)
+
+    val Achievement = Color(0xFF7251A2)
+    val AchievementContainer = Color(0xFFECDCFF)
+    val OnAchievementContainer = Color(0xFF270057)
+}
 
 val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1976D2),
+    primary = Color(0xFF006B5F),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFBBDEFB),
-    onPrimaryContainer = Color(0xFF0D47A1),
-    secondary = Color(0xFF4CAF50),
+    primaryContainer = Color(0xFF9EF2DF),
+    onPrimaryContainer = Color(0xFF00201B),
+    secondary = Color(0xFF4A635E),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFC8E6C9),
-    onSecondaryContainer = Color(0xFF1B5E20),
-    tertiary = Color(0xFFF44336),
+    secondaryContainer = Color(0xFFCDE8E1),
+    onSecondaryContainer = Color(0xFF06201B),
+    tertiary = Color(0xFF66587A),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFFFCDD2),
-    onTertiaryContainer = Color(0xFFB71C1C),
-    error = Color(0xFFD32F2F),
+    tertiaryContainer = Color(0xFFEDDCFF),
+    onTertiaryContainer = Color(0xFF211533),
+    error = AppColors.Delete,
     onError = Color.White,
-    errorContainer = Color(0xFFFFCDD2),
-    onErrorContainer = Color(0xFFB71C1C),
-    background = Color(0xFFFFFBFE),
-    onBackground = Color(0xFF1C1B1F),
-    surface = Color(0xFFFFFBFE),
-    onSurface = Color(0xFF1C1B1F),
-    surfaceVariant = Color(0xFFF5F5F5),
-    onSurfaceVariant = Color(0xFF49454F),
-    outline = Color(0xFF79747E),
-    outlineVariant = Color(0xFFCAC4D0),
+    errorContainer = AppColors.DeleteContainer,
+    onErrorContainer = AppColors.OnDeleteContainer,
+    background = Color(0xFFFBFCF9),
+    onBackground = Color(0xFF191C1B),
+    surface = Color(0xFFFBFCF9),
+    onSurface = Color(0xFF191C1B),
+    surfaceVariant = Color(0xFFDCE5E1),
+    onSurfaceVariant = Color(0xFF404946),
+    outline = Color(0xFF707976),
+    outlineVariant = Color(0xFFC0C9C5),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF5F7F4),
+    surfaceContainer = Color(0xFFEFF1EE),
+    surfaceContainerHigh = Color(0xFFE9EBE8),
+    surfaceContainerHighest = Color(0xFFE3E5E2),
 )
 
 val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF90CAF9),
-    onPrimary = Color(0xFF0D47A1),
-    primaryContainer = Color(0xFF1565C0),
-    onPrimaryContainer = Color(0xFFBBDEFB),
-    secondary = Color(0xFFA5D6A7),
-    onSecondary = Color(0xFF1B5E20),
-    secondaryContainer = Color(0xFF2E7D32),
-    onSecondaryContainer = Color(0xFFC8E6C9),
-    tertiary = Color(0xFFEF9A9A),
-    onTertiary = Color(0xFFB71C1C),
-    tertiaryContainer = Color(0xFFC62828),
-    onTertiaryContainer = Color(0xFFFFCDD2),
-    error = Color(0xFFEF9A9A),
-    onError = Color(0xFFB71C1C),
-    errorContainer = Color(0xFFC62828),
-    onErrorContainer = Color(0xFFFFCDD2),
-    background = Color(0xFF1C1B1F),
-    onBackground = Color(0xFFE6E1E5),
-    surface = Color(0xFF1C1B1F),
-    onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF2D2D2D),
-    onSurfaceVariant = Color(0xFFCAC4D0),
-    outline = Color(0xFF938F99),
-    outlineVariant = Color(0xFF49454F),
+    primary = Color(0xFF82D5C4),
+    onPrimary = Color(0xFF003730),
+    primaryContainer = Color(0xFF005047),
+    onPrimaryContainer = Color(0xFF9EF2DF),
+    secondary = Color(0xFFB1CCC5),
+    onSecondary = Color(0xFF1C3530),
+    secondaryContainer = Color(0xFF334B46),
+    onSecondaryContainer = Color(0xFFCDE8E1),
+    tertiary = Color(0xFFD1C0E8),
+    onTertiary = Color(0xFF372A49),
+    tertiaryContainer = Color(0xFF4E4061),
+    onTertiaryContainer = Color(0xFFEDDCFF),
+    error = Color(0xFFFFB4A9),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD4),
+    background = Color(0xFF101413),
+    onBackground = Color(0xFFE0E3E0),
+    surface = Color(0xFF101413),
+    onSurface = Color(0xFFE0E3E0),
+    surfaceVariant = Color(0xFF404946),
+    onSurfaceVariant = Color(0xFFC0C9C5),
+    outline = Color(0xFF8A938F),
+    outlineVariant = Color(0xFF404946),
+    surfaceContainerLowest = Color(0xFF0B0F0E),
+    surfaceContainerLow = Color(0xFF191C1B),
+    surfaceContainer = Color(0xFF1D201F),
+    surfaceContainerHigh = Color(0xFF272B29),
+    surfaceContainerHighest = Color(0xFF323533),
 )
 
 @Composable
 fun PhotoSoapTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

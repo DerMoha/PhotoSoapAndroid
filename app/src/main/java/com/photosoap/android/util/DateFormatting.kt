@@ -1,19 +1,28 @@
 package com.photosoap.android.util
 
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object DateFormatting {
-    private val displayFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    private val shortFormat = SimpleDateFormat("MMM d", Locale.getDefault())
-    private val relativeTodayFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-    private val relativeThisYear = SimpleDateFormat("MMM d", Locale.getDefault())
-    private val relativeFull = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+    private val displayFormat = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+    private val shortFormat = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+    private val relativeTodayFormat = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+    private val relativeThisYear = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+    private val relativeFull = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
 
-    fun formatDisplay(epochMillis: Long): String = displayFormat.format(Date(epochMillis))
-    fun formatShort(epochMillis: Long): String = shortFormat.format(Date(epochMillis))
+    fun formatDisplay(epochMillis: Long): String {
+        val instant = Instant.ofEpochMilli(epochMillis)
+        return displayFormat.withZone(ZoneId.systemDefault()).format(instant)
+    }
+
+    fun formatShort(epochMillis: Long): String {
+        val instant = Instant.ofEpochMilli(epochMillis)
+        return shortFormat.withZone(ZoneId.systemDefault()).format(instant)
+    }
 }
 
 fun Long.millisToHumanReadable(): String {

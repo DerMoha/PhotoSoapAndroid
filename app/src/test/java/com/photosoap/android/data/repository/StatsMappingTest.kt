@@ -35,6 +35,9 @@ class StatsMappingTest {
         assertEquals(3, domain.dayStreak)
         assertEquals(20, domain.todayReviewCount)
         assertEquals(40, domain.bestDayReviewCount)
+        assertEquals(10, domain.dailyChallengeProgress)
+        assertEquals(20, domain.dailyChallengeTarget)
+        assertEquals("review", domain.dailyChallengeType)
     }
 
     @Test

@@ -1,34 +1,40 @@
 package com.photosoap.android.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.ui.theme.AppMotion
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 @Composable
 fun SwipeableCard(
     modifier: Modifier = Modifier,
+    resetKey: Any? = Unit,
     enabled: Boolean = true,
     onSwiped: (SwipeDirection) -> Unit,
     onSwipeProgress: (Float) -> Unit = {},
@@ -37,9 +43,6 @@ fun SwipeableCard(
     content: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp.value
-    val swipeThreshold = screenWidth * 0.3f
-
     val offsetX = remember { Animatable(0f) }
     val offsetY = remember { Animatable(0f) }
     val rotation = remember { Animatable(0f) }
@@ -47,32 +50,58 @@ fun SwipeableCard(
     var swipeDirection by remember { mutableStateOf<SwipeDirection?>(null) }
     var isAnimating by remember { mutableStateOf(false) }
 
-    fun commitSwipe(direction: SwipeDirection) {
+    LaunchedEffect(resetKey) {
+        offsetX.snapTo(0f)
+        offsetY.snapTo(0f)
+        rotation.snapTo(0f)
+        scale.snapTo(1f)
+        swipeDirection = null
+        isAnimating = false
+        onSwipeProgress(0f)
+    }
+
+    fun updateSwipeState(x: Float, threshold: Float) {
+        val progress = (x / threshold).coerceIn(-1f, 1f)
+        onSwipeProgress(progress)
+        swipeDirection = when {
+            progress > 0.35f -> SwipeDirection.KEEP
+            progress < -0.35f -> SwipeDirection.DELETE
+            else -> null
+        }
+        scope.launch {
+            rotation.snapTo(progress * 8f)
+            scale.snapTo(1f - progress.absoluteValue * 0.035f)
+        }
+    }
+
+    fun commitSwipe(direction: SwipeDirection, cardWidth: Float, initialVelocity: Float = 0f) {
         isAnimating = true
-        val targetX = if (direction == SwipeDirection.KEEP) screenWidth * 2 else -screenWidth * 2
+        val targetX = if (direction == SwipeDirection.KEEP) cardWidth * 1.45f else -cardWidth * 1.45f
         scope.launch {
             coroutineScope {
-                launch { offsetX.animateTo(targetX, AppMotion.cardSwipeOut) }
+                launch { offsetX.animateTo(targetX, AppMotion.cardSwipeOut, initialVelocity = initialVelocity) }
                 launch { offsetY.animateTo(0f, AppMotion.cardSwipeOut) }
                 launch {
                     rotation.animateTo(
-                        if (direction == SwipeDirection.KEEP) 15f else -15f,
+                        if (direction == SwipeDirection.KEEP) 10f else -10f,
                         AppMotion.cardSwipeOut,
                     )
                 }
-                launch { scale.animateTo(0.95f, AppMotion.cardSwipeOut) }
+                launch { scale.animateTo(0.97f, AppMotion.cardSwipeOut) }
             }
             isAnimating = false
             onSwiped(direction)
         }
     }
 
-    fun snapBack() {
+    fun snapBack(initialVelocity: Float = 0f) {
         scope.launch {
-            offsetX.animateTo(0f, AppMotion.cardSnapBack)
-            offsetY.animateTo(0f, AppMotion.cardSnapBack)
-            rotation.animateTo(0f, AppMotion.cardSnapBack)
-            scale.animateTo(1f, AppMotion.cardSnapBack)
+            coroutineScope {
+                launch { offsetX.animateTo(0f, AppMotion.cardSnapBack, initialVelocity = initialVelocity) }
+                launch { offsetY.animateTo(0f, AppMotion.cardSnapBack) }
+                launch { rotation.animateTo(0f, AppMotion.cardSnapBack) }
+                launch { scale.animateTo(1f, AppMotion.cardSnapBack) }
+            }
             onSwipeProgress(0f)
             swipeDirection = null
         }
@@ -89,51 +118,74 @@ fun SwipeableCard(
                 }
                 .pointerInput(enabled, isAnimating) {
                     if (!enabled || isAnimating) return@pointerInput
-                    detectDragGestures(
-                        onDragEnd = {
-                            if (offsetX.value > swipeThreshold) {
-                                commitSwipe(SwipeDirection.KEEP)
-                            } else if (offsetX.value < -swipeThreshold) {
-                                commitSwipe(SwipeDirection.DELETE)
-                            } else {
-                                snapBack()
-                            }
-                        },
-                        onDragCancel = { snapBack() },
-                        onDrag = { change, dragAmount ->
+                    awaitEachGesture {
+                        val cardWidth = size.width.toFloat().coerceAtLeast(1f)
+                        val swipeThreshold = cardWidth * 0.28f
+                        val velocityThreshold = cardWidth * 2.2f
+                        val velocityTracker = VelocityTracker()
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var pointerId = down.id
+                        var dragged = false
+
+                        scope.launch {
+                            offsetX.stop()
+                            offsetY.stop()
+                            rotation.stop()
+                            scale.stop()
+                        }
+                        velocityTracker.addPosition(down.uptimeMillis, down.position)
+
+                        val slopChange = awaitTouchSlopOrCancellation(pointerId) { change, overSlop ->
                             change.consume()
+                            dragged = true
+                            velocityTracker.addPosition(change.uptimeMillis, change.position)
+                            val newX = offsetX.value + overSlop.x
+                            val newY = (offsetY.value + overSlop.y).coerceIn(-cardWidth * 0.12f, cardWidth * 0.12f)
                             scope.launch {
-                                val newX = offsetX.value + dragAmount.x
-                                val newY = offsetY.value + dragAmount.y
                                 offsetX.snapTo(newX)
                                 offsetY.snapTo(newY)
-                                rotation.snapTo(newX * 0.05f)
-                                val progress =
-                                    (newX / swipeThreshold).coerceIn(-1f, 1f)
-                                onSwipeProgress(progress)
-                                swipeDirection = when {
-                                    progress > 0.3f -> SwipeDirection.KEEP
-                                    progress < -0.3f -> SwipeDirection.DELETE
-                                    else -> null
-                                }
-                                scale.snapTo(1f - kotlin.math.abs(progress) * 0.05f)
                             }
-                        },
-                    )
-                }
-                .pointerInput(enabled, isAnimating) {
-                    if (!enabled || isAnimating) return@pointerInput
-                    awaitPointerEventScope {
-                        awaitPointerEvent()
-                        if (offsetX.value == 0f && offsetY.value == 0f) {
+                            updateSwipeState(newX, swipeThreshold)
+                        }
+
+                        if (slopChange == null) {
                             onTap()
+                            return@awaitEachGesture
+                        }
+
+                        pointerId = slopChange.id
+                        horizontalDrag(pointerId) { change ->
+                            val dragAmount = change.positionChange()
+                            change.consume()
+                            velocityTracker.addPosition(change.uptimeMillis, change.position)
+                            val newX = offsetX.value + dragAmount.x
+                            val newY = (offsetY.value + dragAmount.y).coerceIn(-cardWidth * 0.12f, cardWidth * 0.12f)
+                            scope.launch {
+                                offsetX.snapTo(newX)
+                                offsetY.snapTo(newY)
+                            }
+                            updateSwipeState(newX, swipeThreshold)
+                        }
+
+                        if (!dragged) return@awaitEachGesture
+                        val velocity = velocityTracker.calculateVelocity().x
+                        val targetDirection = when {
+                            offsetX.value > swipeThreshold || velocity > velocityThreshold -> SwipeDirection.KEEP
+                            offsetX.value < -swipeThreshold || velocity < -velocityThreshold -> SwipeDirection.DELETE
+                            else -> null
+                        }
+
+                        if (targetDirection != null) {
+                            commitSwipe(targetDirection, cardWidth, velocity)
+                        } else {
+                            snapBack(velocity)
                         }
                     }
                 },
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFF5F5F5),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
         ) {
             content()

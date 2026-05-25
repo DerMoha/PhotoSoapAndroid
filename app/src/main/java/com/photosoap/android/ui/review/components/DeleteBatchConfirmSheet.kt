@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.photosoap.android.ui.theme.AppColors
 
 @Composable
 fun DeleteBatchConfirmSheet(
@@ -34,7 +35,7 @@ fun DeleteBatchConfirmSheet(
             Icon(
                 Icons.Filled.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
+                tint = AppColors.Delete,
             )
         },
         title = {
@@ -61,7 +62,8 @@ fun DeleteBatchConfirmSheet(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
+                    containerColor = AppColors.Delete,
+                    contentColor = AppColors.OnDelete,
                 ),
             ) {
                 Text("Delete")

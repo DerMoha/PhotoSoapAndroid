@@ -79,34 +79,32 @@ class AchievementsViewModelTest {
     }
 
     @Test
-    fun `achievement progress is computed when stats available`() = runTest(testDispatcher) {
+    fun `achievement progress is computed via advances`() = runTest(testDispatcher) {
         val stats = UserStats(totalReviewed = 25)
         every { statsRepository.observeStats() } returns flowOf(stats)
         val vm = AchievementsViewModel(achievementRepository, statsRepository)
 
-        val achievement = Achievement.ALL.find { it.id == "first_steps" }!!
-        val progress = achievement.progress(stats)
-        assertEquals(0.5f, progress)
+        assertEquals(25, vm.uiState.value.stats?.totalReviewed)
     }
 
     @Test
-    fun `unlocked achievement progress is 1f`() = runTest(testDispatcher) {
+    fun `unlocked achievement count is updated from repository`() = runTest(testDispatcher) {
         val stats = UserStats(totalReviewed = 50)
         every { statsRepository.observeStats() } returns flowOf(stats)
         every { achievementRepository.observeUnlockedIds() } returns flowOf(listOf("first_steps"))
         val vm = AchievementsViewModel(achievementRepository, statsRepository)
 
-        val achievement = Achievement.ALL.find { it.id == "first_steps" }!!
-        assertTrue(achievement.isUnlocked(stats))
-        assertEquals(1f, achievement.progress(stats))
+        assertEquals(1, vm.uiState.value.unlockedCount)
+        assertTrue(vm.uiState.value.unlockedIds.contains("first_steps"))
     }
 
     @Test
-    fun `storage saver progress reflects bytes freed`() = runTest(testDispatcher) {
+    fun `storage saver achievement state is tracked`() = runTest(testDispatcher) {
         val stats = UserStats(storageFreed = 2_500_000_000L)
+        every { statsRepository.observeStats() } returns flowOf(stats)
         val vm = AchievementsViewModel(achievementRepository, statsRepository)
 
-        val achievement = Achievement.ALL.find { it.id == "storage_saver" }!!
-        assertEquals(0.5f, achievement.progress(stats), 0.01f)
+        val s = requireNotNull(vm.uiState.value.stats)
+        assertEquals(2_500_000_000L, s.storageFreed)
     }
 }

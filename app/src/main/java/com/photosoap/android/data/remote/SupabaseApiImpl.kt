@@ -2,6 +2,9 @@ package com.photosoap.android.data.remote
 
 import com.photosoap.android.data.remote.dto.MetricsIngestResponse
 import com.photosoap.android.data.remote.dto.MetricsPayload
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
@@ -18,33 +21,40 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
     }
 
     override suspend fun ingestMetrics(payload: MetricsPayload): Result<Unit> {
-        return try {
-            val metricsUrl = getMetricsUrl()
-            if (metricsUrl.isBlank()) return Result.success(Unit)
+        val metricsUrl = getMetricsUrl()
+        if (metricsUrl.isBlank()) return Result.failure(IllegalStateException("Metrics URL not configured"))
 
+        return withContext(Dispatchers.IO) {
             val url = URL(metricsUrl)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("apikey", getAnonKey())
-            connection.setRequestProperty("Authorization", "Bearer ${getAnonKey()}")
-            connection.doOutput = true
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 15_000
-
-            val body = json.encodeToString(payload)
-            connection.outputStream.use { it.write(body.toByteArray()) }
-
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                Result.success(Unit)
-            } else if (responseCode in setOf(400, 401, 403, 404, 422)) {
-                Result.failure(PermanentMetricsException("HTTP $responseCode"))
-            } else {
-                Result.failure(Exception("HTTP $responseCode"))
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("apikey", getAnonKey())
+                setRequestProperty("Authorization", "Bearer ${getAnonKey()}")
+                doOutput = true
+                connectTimeout = 15_000
+                readTimeout = 15_000
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+
+            try {
+                val body = json.encodeToString(payload)
+                connection.outputStream.use { it.write(body.toByteArray()) }
+
+                val responseCode = connection.responseCode
+                if (responseCode in 200..299) {
+                    Result.success(Unit)
+                } else if (responseCode in setOf(400, 401, 403, 404, 422)) {
+                    Result.failure(PermanentMetricsException("HTTP $responseCode"))
+                } else {
+                    Result.failure(Exception("HTTP $responseCode"))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            } finally {
+                connection.disconnect()
+            }
         }
     }
 

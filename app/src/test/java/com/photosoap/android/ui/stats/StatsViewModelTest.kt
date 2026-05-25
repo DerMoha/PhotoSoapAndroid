@@ -52,10 +52,10 @@ class StatsViewModelTest {
         every { statsRepository.observeStats() } returns flowOf(stats)
 
         val vm = StatsViewModel(statsRepository)
-        assertNotNull(vm.uiState.value.stats)
-        assertEquals(100, vm.uiState.value.stats!!.totalReviewed)
-        assertEquals(50, vm.uiState.value.stats!!.totalDeleted)
-        assertEquals(50, vm.uiState.value.stats!!.totalKept)
+        val s = requireNotNull(vm.uiState.value.stats)
+        assertEquals(100, s.totalReviewed)
+        assertEquals(50, s.totalDeleted)
+        assertEquals(50, s.totalKept)
     }
 
     @Test
@@ -70,7 +70,7 @@ class StatsViewModelTest {
         every { statsRepository.observeStats() } returns flowOf(stats)
 
         val vm = StatsViewModel(statsRepository)
-        val s = vm.uiState.value.stats!!
+        val s = requireNotNull(vm.uiState.value.stats)
         assertEquals(1500, s.totalReviewed)
         assertEquals(50, s.bestStreak)
         assertEquals(7, s.dayStreak)
@@ -92,6 +92,7 @@ class StatsViewModelTest {
         every { statsRepository.observeStats() } returns flowOf(stats)
 
         val vm = StatsViewModel(statsRepository)
-        assertEquals(12_345_678_901L, vm.uiState.value.stats!!.storageFreed)
+        val s = requireNotNull(vm.uiState.value.stats)
+        assertEquals(12_345_678_901L, s.storageFreed)
     }
 }
