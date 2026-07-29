@@ -6,7 +6,7 @@ interface MetricsRepository {
     val installId: Flow<String>
     val isEnabled: Flow<Boolean>
 
-    suspend fun trackReview()
+    suspend fun trackKept(count: Int = 1)
     suspend fun trackDeletion(fileSize: Long)
     suspend fun trackBatchDeletion(count: Int, totalFileSize: Long)
     suspend fun flush()

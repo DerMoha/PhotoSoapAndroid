@@ -3,6 +3,7 @@ package com.photosoap.android.ui.review
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.viewModelScope
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.ReviewFilter
@@ -22,6 +23,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -48,6 +50,7 @@ class ReviewViewModelTest {
     private val metricsRepository = mockk<MetricsRepository>(relaxed = true)
 
     private val testDispatcher = UnconfinedTestDispatcher()
+    private val viewModels = mutableListOf<ReviewViewModel>()
 
     @BeforeEach
     fun setup() {
@@ -56,6 +59,7 @@ class ReviewViewModelTest {
         every { settingsRepository.mediaKind } returns flowOf("all")
         every { settingsRepository.sortOrder } returns flowOf("newest_first")
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
+        every { settingsRepository.pendingDeletions } returns flowOf("[]")
         every { photoRepository.observeReviewedPhotoUris() } returns flowOf(emptyList())
         every { statsRepository.observeStats() } returns flowOf(null)
         coEvery { statsRepository.getStats() } returns null
@@ -65,6 +69,8 @@ class ReviewViewModelTest {
 
     @AfterEach
     fun tearDown() {
+        viewModels.forEach { it.viewModelScope.cancel() }
+        viewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -75,12 +81,39 @@ class ReviewViewModelTest {
         settingsRepository = settingsRepository,
         achievementRepository = achievementRepository,
         metricsRepository = metricsRepository,
-    )
+        ioDispatcher = testDispatcher,
+    ).also(viewModels::add)
 
     @Test
     fun `initial state is created`() = runTest(testDispatcher) {
         val vm = createViewModel()
         assertNotNull(vm.uiState.value)
+    }
+
+    @Test
+    fun `persisted media preferences are applied before the first review query`() = runTest(testDispatcher) {
+        every { settingsRepository.mediaKind } returns flowOf("VIDEOS")
+        every { settingsRepository.sortOrder } returns flowOf("OLDEST_FIRST")
+
+        val vm = createViewModel()
+
+        assertEquals(MediaKind.VIDEOS, vm.uiState.value.mediaKind)
+        assertEquals(SortOrder.OLDEST_FIRST, vm.uiState.value.sortOrder)
+    }
+
+    @Test
+    fun `a new review session resets session-only counters`() = runTest(testDispatcher) {
+        val previous = UserStats(sessionReviewCount = 12, currentStreak = 8, bestStreak = 20)
+        every { statsRepository.observeStats() } returns flowOf(previous)
+        coEvery { statsRepository.getStats() } returns previous
+
+        createViewModel()
+
+        coVerify {
+            statsRepository.updateStats(match {
+                it.sessionReviewCount == 0 && it.currentStreak == 0 && it.bestStreak == 20
+            })
+        }
     }
 
     @Test

@@ -58,7 +58,15 @@ class SettingsDataStore(private val context: Context) {
     }
 
     suspend fun setAnalyticsEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_ANALYTICS_ENABLED] = enabled }
+        context.dataStore.edit {
+            it[KEY_ANALYTICS_ENABLED] = enabled
+            if (!enabled) {
+                it.remove(KEY_INSTALL_ID)
+                it.remove(KEY_PENDING_METRICS)
+                it.remove(KEY_LAST_METRICS_FLUSH)
+                it.remove(KEY_METRICS_DISABLED_PERMANENTLY)
+            }
+        }
     }
 
     suspend fun setMediaKind(kind: String) {

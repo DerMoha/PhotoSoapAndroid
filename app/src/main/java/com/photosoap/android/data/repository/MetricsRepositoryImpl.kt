@@ -6,7 +6,6 @@ import com.photosoap.android.data.remote.PermanentMetricsException
 import com.photosoap.android.data.remote.dto.DailyBucket
 import com.photosoap.android.data.remote.dto.MetricsPayload
 import com.photosoap.android.domain.repository.MetricsRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -31,46 +30,56 @@ class MetricsRepositoryImpl @Inject constructor(
     override val isEnabled: Flow<Boolean> = dataStore.analyticsEnabled
 
     private val pendingBuckets = mutableListOf<DailyBucket>()
-    private var retryCount = 0
+    private var hasLoadedPendingBuckets = false
 
-    private var cachedInstallId: String? = null
-    private var cachedIsEnabled: Boolean? = null
-
-    override suspend fun trackReview() {
-        if (!isCachedEnabled()) return
+    override suspend fun trackKept(count: Int) {
+        if (count <= 0 || !prepareForCollection()) return
         val shouldFlush = mutex.withLock {
+            loadPendingBucketsLocked()
             ensureInstallIdLocked()
-            addToDailyBucket(reviewDelta = 1)
+            addToDailyBucket(reviewDelta = count)
+            savePendingBuckets()
             checkFlushThreshold()
         }
         if (shouldFlush) flush()
     }
 
     override suspend fun trackDeletion(fileSize: Long) {
-        if (!isCachedEnabled()) return
+        if (!prepareForCollection()) return
         val shouldFlush = mutex.withLock {
+            loadPendingBucketsLocked()
             ensureInstallIdLocked()
-            addToDailyBucket(deleteDelta = 1, bytesDelta = fileSize)
+            addToDailyBucket(reviewDelta = 1, deleteDelta = 1, bytesDelta = fileSize)
+            savePendingBuckets()
             checkFlushThreshold()
         }
         if (shouldFlush) flush()
     }
 
     override suspend fun trackBatchDeletion(count: Int, totalFileSize: Long) {
-        if (!isCachedEnabled()) return
+        if (count <= 0 || !prepareForCollection()) return
         val shouldFlush = mutex.withLock {
+            loadPendingBucketsLocked()
             ensureInstallIdLocked()
-            addToDailyBucket(deleteDelta = count, bytesDelta = totalFileSize)
+            addToDailyBucket(
+                reviewDelta = count,
+                deleteDelta = count,
+                bytesDelta = totalFileSize,
+            )
+            savePendingBuckets()
             checkFlushThreshold()
         }
         if (shouldFlush) flush()
     }
 
     override suspend fun flush() = mutex.withLock {
-        if (!isCachedEnabled()) return@withLock
+        if (!isEnabled.first()) return@withLock
         if (dataStore.metricsDisabledPermanently.first()) return@withLock
 
-        val id = cachedInstallId ?: return@withLock
+        loadPendingBucketsLocked()
+        ensureInstallIdLocked()
+
+        val id = ensureInstallIdLocked()
         if (id.isBlank()) return@withLock
 
         if (pendingBuckets.isEmpty()) return@withLock
@@ -84,47 +93,65 @@ class MetricsRepositoryImpl @Inject constructor(
         val result = api.ingestMetrics(payload)
         result.fold(
             onSuccess = {
-                pendingBuckets.clear()
-                dataStore.setPendingMetrics("[]")
-                retryCount = 0
+                savePendingBuckets()
                 dataStore.setLastMetricsFlush(System.currentTimeMillis())
             },
             onFailure = { error ->
                 if (error is PermanentMetricsException) {
                     pendingBuckets.clear()
-                    dataStore.setPendingMetrics("[]")
-                    dataStore.setMetricsDisabledPermanently(true)
-                    retryCount = 0
-                } else if (retryCount < 3) {
-                    retryCount++
-                    savePendingBuckets()
-                    scheduleRetry()
+                    // Reflect a non-retryable backend rejection in the user-facing
+                    // preference instead of leaving an enabled toggle that uploads nothing.
+                    dataStore.setAnalyticsEnabled(false)
                 } else {
                     savePendingBuckets()
-                    retryCount = 0
                 }
             },
         )
     }
 
-    private suspend fun isCachedEnabled(): Boolean {
-        val cached = cachedIsEnabled
-        if (cached != null) return cached
-        cachedIsEnabled = isEnabled.first()
-        return cachedIsEnabled ?: false
+    private suspend fun prepareForCollection(): Boolean {
+        if (isEnabled.first()) {
+            if (dataStore.installId.first().isBlank()) {
+                mutex.withLock {
+                    pendingBuckets.clear()
+                    hasLoadedPendingBuckets = false
+                }
+            }
+            return true
+        }
+        mutex.withLock {
+            pendingBuckets.clear()
+            hasLoadedPendingBuckets = false
+        }
+        return false
     }
 
-    private suspend fun ensureInstallIdLocked() {
-        val id = cachedInstallId ?: run {
-            val fresh = installId.first()
-            cachedInstallId = fresh
-            fresh
+    private suspend fun loadPendingBucketsLocked() {
+        if (hasLoadedPendingBuckets) return
+        val stored = dataStore.pendingMetrics.first()
+        if (stored.isNotBlank()) {
+            runCatching {
+                json.decodeFromString<List<DailyBucket>>(stored)
+            }.getOrNull()?.let(pendingBuckets::addAll)
         }
+        val oldestAllowed = LocalDate.now().minusDays(13)
+        pendingBuckets.removeAll { bucket ->
+            runCatching { LocalDate.parse(bucket.metricDate) }
+                .getOrNull()
+                ?.isBefore(oldestAllowed) != false
+        }
+        hasLoadedPendingBuckets = true
+    }
+
+    private suspend fun ensureInstallIdLocked(): String {
+        val id = installId.first()
         if (id.isBlank()) {
             val newId = UUID.randomUUID().toString()
             dataStore.setInstallId(newId)
-            cachedInstallId = newId
+            dataStore.setLastMetricsFlush(System.currentTimeMillis())
+            return newId
         }
+        return id
     }
 
     private fun addToDailyBucket(reviewDelta: Int = 0, deleteDelta: Int = 0, bytesDelta: Long = 0) {
@@ -156,26 +183,10 @@ class MetricsRepositoryImpl @Inject constructor(
     private suspend fun checkFlushThreshold(): Boolean {
         val now = System.currentTimeMillis()
         val lastFlush = dataStore.lastMetricsFlush.first()
-        val hoursSinceLastFlush = if (lastFlush == 0L) 0 else (now - lastFlush) / (1000 * 60 * 60)
+        val hoursSinceLastFlush = if (lastFlush == 0L) 0
+            else (now - lastFlush) / (1000 * 60 * 60)
 
-        val shouldFlush = hoursSinceLastFlush >= 24 ||
-                pendingBuckets.size >= 3 ||
-                pendingBuckets.sumOf { it.reviewedPhotos } >= 200 ||
-                pendingBuckets.sumOf { it.bytesFreed } >= 500_000_000L
-
-        if (shouldFlush) savePendingBuckets()
-        return shouldFlush
-    }
-
-    private suspend fun scheduleRetry() {
-        val delayMs = when (retryCount) {
-            1 -> 15 * 60 * 1000L
-            2 -> 60 * 60 * 1000L
-            3 -> 6 * 60 * 60 * 1000L
-            else -> return
-        }
-        delay(delayMs)
-        flush()
+        return hoursSinceLastFlush >= 24
     }
 
     private suspend fun savePendingBuckets() {

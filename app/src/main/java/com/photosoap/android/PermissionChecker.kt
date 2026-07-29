@@ -14,6 +14,10 @@ class PermissionChecker @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     fun hasMediaPermissions(): Boolean {
+        return getMediaAccess() != MediaAccess.NONE
+    }
+
+    fun getMediaAccess(): MediaAccess {
         val imagePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
         } else {
@@ -26,18 +30,50 @@ class PermissionChecker @Inject constructor(
             PackageManager.PERMISSION_GRANTED
         }
 
-        return imagePermission == PackageManager.PERMISSION_GRANTED &&
-                videoPermission == PackageManager.PERMISSION_GRANTED
+        val selectedMediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+            )
+        } else {
+            PackageManager.PERMISSION_DENIED
+        }
+
+        val hasImages = imagePermission == PackageManager.PERMISSION_GRANTED
+        val hasVideos = videoPermission == PackageManager.PERMISSION_GRANTED
+        val hasSelected = selectedMediaPermission == PackageManager.PERMISSION_GRANTED
+        return when {
+            hasImages && hasVideos -> MediaAccess.FULL
+            hasImages || hasVideos || hasSelected -> MediaAccess.LIMITED
+            else -> MediaAccess.NONE
+        }
     }
 
     fun getRequiredPermissions(): Array<String> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             arrayOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
                 Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+            )
+        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P) {
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
             )
         } else {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
+}
+
+enum class MediaAccess {
+    NONE,
+    LIMITED,
+    FULL,
 }

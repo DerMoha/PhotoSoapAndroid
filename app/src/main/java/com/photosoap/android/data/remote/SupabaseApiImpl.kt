@@ -1,5 +1,6 @@
 package com.photosoap.android.data.remote
 
+import com.photosoap.android.BuildConfig
 import com.photosoap.android.data.remote.dto.MetricsIngestResponse
 import com.photosoap.android.data.remote.dto.MetricsPayload
 import kotlinx.coroutines.CancellationException
@@ -15,14 +16,15 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    companion object {
-        private const val DEFAULT_METRICS_URL = ""
-        private const val DEFAULT_ANON_KEY = ""
-    }
-
     override suspend fun ingestMetrics(payload: MetricsPayload): Result<Unit> {
         val metricsUrl = getMetricsUrl()
         if (metricsUrl.isBlank()) return Result.failure(IllegalStateException("Metrics URL not configured"))
+        if (!metricsUrl.startsWith("https://")) {
+            return Result.failure(PermanentMetricsException("Metrics URL must use HTTPS"))
+        }
+        if (getAnonKey().isBlank()) {
+            return Result.failure(IllegalStateException("Metrics key not configured"))
+        }
 
         return withContext(Dispatchers.IO) {
             val url = URL(metricsUrl)
@@ -30,14 +32,18 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("apikey", getAnonKey())
-                setRequestProperty("Authorization", "Bearer ${getAnonKey()}")
                 doOutput = true
                 connectTimeout = 15_000
                 readTimeout = 15_000
             }
 
             try {
-                val body = json.encodeToString(payload)
+                val body = json.encodeToString(
+                    payload.copy(
+                        appVersion = BuildConfig.VERSION_NAME,
+                        buildNumber = BuildConfig.VERSION_CODE.toString(),
+                    )
+                )
                 connection.outputStream.use { it.write(body.toByteArray()) }
 
                 val responseCode = connection.responseCode
@@ -58,8 +64,8 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
         }
     }
 
-    private fun getMetricsUrl(): String = DEFAULT_METRICS_URL
-    private fun getAnonKey(): String = DEFAULT_ANON_KEY
+    private fun getMetricsUrl(): String = BuildConfig.METRICS_URL
+    private fun getAnonKey(): String = BuildConfig.METRICS_ANON_KEY
 }
 
 class PermanentMetricsException(message: String) : Exception(message)

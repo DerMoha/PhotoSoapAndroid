@@ -7,12 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.photosoap.android.navigation.AppNavHost
 import com.photosoap.android.ui.components.PermissionGate
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             PhotoSoapTheme {
                 val viewModel: MainViewModel = hiltViewModel()
-                val state by viewModel.uiState.collectAsState()
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
                 val navController = rememberNavController()
 
                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -64,7 +64,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         is MainUiState.Main -> {
-                            AppNavHost(navController = navController)
+                            AppNavHost(
+                                navController = navController,
+                                isLimitedAccess = (state as MainUiState.Main).isLimitedAccess,
+                            )
                         }
                     }
                 }

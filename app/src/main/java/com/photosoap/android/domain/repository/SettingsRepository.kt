@@ -9,6 +9,7 @@ interface SettingsRepository {
     val analyticsEnabled: Flow<Boolean>
     val mediaKind: Flow<String>
     val sortOrder: Flow<String>
+    val pendingDeletions: Flow<String>
 
     suspend fun setOnboardingSeen()
     suspend fun resetOnboarding()
@@ -17,4 +18,5 @@ interface SettingsRepository {
     suspend fun setAnalyticsEnabled(enabled: Boolean)
     suspend fun setMediaKind(kind: String)
     suspend fun setSortOrder(order: String)
+    suspend fun setPendingDeletions(json: String)
 }

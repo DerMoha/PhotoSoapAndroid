@@ -1,15 +1,14 @@
 package com.photosoap.android.util
 
-import android.content.Context
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import com.photosoap.android.domain.repository.SettingsRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class HapticsController(
     private val view: View,
@@ -22,7 +21,7 @@ class HapticsController(
 
     fun impactMedium() {
         if (!enabled) return
-        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.performHapticFeedback(confirmFeedback())
     }
 
     fun impactHeavy() {
@@ -32,18 +31,31 @@ class HapticsController(
 
     fun notificationSuccess() {
         if (!enabled) return
-        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.performHapticFeedback(confirmFeedback())
     }
 
     fun notificationError() {
         if (!enabled) return
-        view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                HapticFeedbackConstants.REJECT
+            } else {
+                HapticFeedbackConstants.LONG_PRESS
+            }
+        )
     }
 
     fun selection() {
         if (!enabled) return
         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
     }
+
+    private fun confirmFeedback(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            HapticFeedbackConstants.CONFIRM
+        } else {
+            HapticFeedbackConstants.KEYBOARD_TAP
+        }
 }
 
 @Composable
@@ -51,6 +63,6 @@ fun rememberHapticsController(
     settingsRepository: SettingsRepository,
 ): HapticsController {
     val view = LocalView.current
-    val enabled by settingsRepository.hapticsEnabled.collectAsState(initial = false)
+    val enabled by settingsRepository.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
     return remember(view, enabled) { HapticsController(view, enabled) }
 }

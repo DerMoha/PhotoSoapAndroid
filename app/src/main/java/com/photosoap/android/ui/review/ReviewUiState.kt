@@ -37,6 +37,7 @@ data class ReviewUiState(
     val showPhotoPreview: Boolean = false,
     val previewPhoto: Photo? = null,
     val pendingDeleteIntentSender: IntentSender? = null,
+    val pendingLegacyDeleteRetry: Boolean = false,
     val showDeveloperOptions: Boolean = false,
     val selectedYear: Int? = null,
 ) {
@@ -58,6 +59,7 @@ sealed interface ReviewUiEvent {
     data object TappedCard : ReviewUiEvent
     data object UndoLastDeletion : ReviewUiEvent
     data object OpenDeleteQueue : ReviewUiEvent
+    data object RequestDeleteConfirmation : ReviewUiEvent
     data object ConfirmDelete : ReviewUiEvent
     data object CancelDeleteConfirm : ReviewUiEvent
     data object DismissDeleteQueue : ReviewUiEvent
