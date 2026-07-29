@@ -102,6 +102,10 @@ android {
     room {
         schemaDirectory("$projectDir/schemas")
     }
+
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 }
 
 dependencies {
