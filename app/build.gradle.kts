@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,18 +10,61 @@ plugins {
     alias(libs.plugins.room)
 }
 
+val releaseProperties = Properties().apply {
+    val propertiesFile = rootProject.file("secrets.properties")
+    if (propertiesFile.exists()) {
+        propertiesFile.inputStream().use(::load)
+    }
+}
+
+val signingStoreFile = releaseProperties.getProperty("signing.storeFile", "")
+val signingStorePassword = releaseProperties.getProperty("signing.storePassword", "")
+val signingKeyAlias = releaseProperties.getProperty("signing.keyAlias", "")
+val signingKeyPassword = releaseProperties.getProperty("signing.keyPassword", "")
+val hasReleaseSigning = listOf(
+    signingStoreFile,
+    signingStorePassword,
+    signingKeyAlias,
+    signingKeyPassword,
+).all(String::isNotBlank) && file(signingStoreFile).isFile
+
+fun quotedBuildConfigValue(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
 android {
     namespace = "com.photosoap.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.photosoap"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
+        buildConfigField(
+            "String",
+            "METRICS_URL",
+            quotedBuildConfigValue(releaseProperties.getProperty("metrics.url", "")),
+        )
+        buildConfigField(
+            "String",
+            "METRICS_ANON_KEY",
+            quotedBuildConfigValue(releaseProperties.getProperty("metrics.anonKey", "")),
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(signingStoreFile)
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -30,6 +75,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isDebuggable = true
@@ -121,4 +169,19 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.register("verifyProductionConfiguration") {
+    group = "verification"
+    description = "Checks release signing and optional metrics configuration before publishing."
+    doLast {
+        check(hasReleaseSigning) {
+            "Release signing is not configured. Add signing.* values to secrets.properties."
+        }
+        val metricsUrl = releaseProperties.getProperty("metrics.url", "")
+        val metricsKey = releaseProperties.getProperty("metrics.anonKey", "")
+        check(metricsUrl.startsWith("https://") && metricsKey.isNotBlank()) {
+            "Aggregate metrics are not configured with an HTTPS URL and publishable key."
+        }
+    }
 }

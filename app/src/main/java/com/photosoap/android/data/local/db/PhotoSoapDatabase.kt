@@ -16,7 +16,7 @@ import com.photosoap.android.data.local.db.entity.UserStatsEntity
         UnlockedAchievementEntity::class,
     ],
     version = 1,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class PhotoSoapDatabase : RoomDatabase() {
     abstract fun userStatsDao(): UserStatsDao

@@ -24,8 +24,7 @@ object DatabaseModule {
             context,
             PhotoSoapDatabase::class.java,
             "photosoap.db",
-        ).fallbackToDestructiveMigration()
-            .build()
+        ).build()
     }
 
     @Provides
