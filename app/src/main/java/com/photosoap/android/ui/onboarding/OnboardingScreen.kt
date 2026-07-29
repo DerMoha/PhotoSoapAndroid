@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -50,6 +51,7 @@ fun OnboardingScreen(
     onGetStarted: (shareAnalytics: Boolean) -> Unit,
 ) {
     var shareAnalytics by rememberSaveable { mutableStateOf(false) }
+    val stackFeatures = LocalDensity.current.fontScale >= 1.3f
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -108,22 +110,42 @@ fun OnboardingScreen(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 tonalElevation = 2.dp,
             ) {
-                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 18.dp)) {
-                    OnboardingFeature(
-                        icon = Icons.Filled.Swipe,
-                        text = stringResource(R.string.onboarding_swipe_desc),
-                        modifier = Modifier.weight(1f),
-                    )
-                    OnboardingFeature(
-                        icon = Icons.Filled.Lock,
-                        text = stringResource(R.string.onboarding_privacy_title),
-                        modifier = Modifier.weight(1f),
-                    )
-                    OnboardingFeature(
-                        icon = Icons.Filled.EmojiEvents,
-                        text = stringResource(R.string.onboarding_rewards_title),
-                        modifier = Modifier.weight(1f),
-                    )
+                if (stackFeatures) {
+                    Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+                        OnboardingFeature(
+                            icon = Icons.Filled.Swipe,
+                            text = stringResource(R.string.onboarding_swipe_desc),
+                            horizontal = true,
+                        )
+                        OnboardingFeature(
+                            icon = Icons.Filled.Lock,
+                            text = stringResource(R.string.onboarding_privacy_title),
+                            horizontal = true,
+                        )
+                        OnboardingFeature(
+                            icon = Icons.Filled.EmojiEvents,
+                            text = stringResource(R.string.onboarding_rewards_title),
+                            horizontal = true,
+                        )
+                    }
+                } else {
+                    Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 18.dp)) {
+                        OnboardingFeature(
+                            icon = Icons.Filled.Swipe,
+                            text = stringResource(R.string.onboarding_swipe_desc),
+                            modifier = Modifier.weight(1f),
+                        )
+                        OnboardingFeature(
+                            icon = Icons.Filled.Lock,
+                            text = stringResource(R.string.onboarding_privacy_title),
+                            modifier = Modifier.weight(1f),
+                        )
+                        OnboardingFeature(
+                            icon = Icons.Filled.EmojiEvents,
+                            text = stringResource(R.string.onboarding_rewards_title),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -183,25 +205,48 @@ private fun OnboardingFeature(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     modifier: Modifier = Modifier,
+    horizontal: Boolean = false,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(28.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
+    if (horizontal) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    } else {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }

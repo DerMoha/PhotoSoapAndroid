@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -52,7 +53,10 @@ fun DeleteQueueTray(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = pluralStringResource(
                     R.plurals.delete_queue_tray_summary,
@@ -63,9 +67,11 @@ fun DeleteQueueTray(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.OnDeleteContainer,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Row {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onUndo) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
@@ -80,7 +86,10 @@ fun DeleteQueueTray(
                     contentColor = AppColors.DeleteContainer,
                 ),
             ) {
-                Text(stringResource(R.string.delete_queue_list))
+                Text(
+                    text = stringResource(R.string.delete_queue_list),
+                    maxLines = 1,
+                )
             }
         }
     }
