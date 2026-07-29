@@ -52,7 +52,7 @@
     <string name="filter_videos">Videos</string>
     <string name="filter_sort_newest">Neueste zuerst</string>
     <string name="filter_sort_oldest">Älteste zuerst</string>
-    <string name="filter_all_photos">Alle Fotos</string>
+    <string name="filter_all_photos">Alle Medien</string>
     <string name="filter_years">Jahre</string>
     <string name="filter_albums">Alben</string>
     <plurals name="album_item_count">
@@ -63,9 +63,9 @@
     <string name="stats_title">Statistik</string>
     <string name="stats_overview">Übersicht</string>
     <string name="stats_streaks">Serien</string>
-    <string name="stats_photos_reviewed">Fotos durchgesehen</string>
-    <string name="stats_photos_deleted">Fotos gelöscht</string>
-    <string name="stats_photos_kept">Fotos behalten</string>
+    <string name="stats_photos_reviewed">Elemente durchgesehen</string>
+    <string name="stats_photos_deleted">Elemente gelöscht</string>
+    <string name="stats_photos_kept">Elemente behalten</string>
     <string name="stats_storage_freed">Speicher freigegeben</string>
     <string name="stats_reviewed_today">Heute durchgesehen</string>
     <string name="stats_days_in_row" tools:ignore="Typos">Tage in Folge</string>
@@ -83,36 +83,36 @@
     <string name="achievements_spring_cleaning">Frühjahrsputz</string>
     <string name="achievements_memory_keeper">Erinnerungsbewahrer</string>
     <string name="achievements_streak_master">Serienmeister</string>
-    <string name="achievements_daily_devotee">Täglicher Nutzer</string>
+    <string name="achievements_daily_devotee">Täglich dabei</string>
     <string name="achievements_storage_saver">Speichersparer</string>
     <string name="achievements_century_club">Hunderter-Club</string>
-    <string name="achievements_photo_pro">Foto-Profi</string>
+    <string name="achievements_photo_pro">Prüfprofi</string>
     <string name="achievements_decisive">Entscheidungsfreudig</string>
     <string name="achievements_cleanup_champion">Aufräum-Champion</string>
 
-    <string name="achievement_first_steps_desc">50 Fotos durchgesehen</string>
-    <string name="achievement_spring_cleaning_desc">200 Fotos gelöscht</string>
-    <string name="achievement_memory_keeper_desc">500 Fotos behalten</string>
+    <string name="achievement_first_steps_desc">50 Elemente durchgesehen</string>
+    <string name="achievement_spring_cleaning_desc">200 Elemente gelöscht</string>
+    <string name="achievement_memory_keeper_desc">500 Elemente behalten</string>
     <string name="achievement_streak_master_desc">Beste Serie von 100 erreicht</string>
-    <string name="achievement_daily_devotee_desc">14 Tage in Folge Fotos durchgesehen</string>
+    <string name="achievement_daily_devotee_desc">14 Tage in Folge Medien durchgesehen</string>
     <string name="achievement_storage_saver_desc">5 GB Speicher freigegeben</string>
-    <string name="achievement_century_club_desc">500 Fotos in einer Sitzung</string>
-    <string name="achievement_photo_pro_desc">5000 Fotos insgesamt</string>
+    <string name="achievement_century_club_desc">500 Elemente in einer Sitzung</string>
+    <string name="achievement_photo_pro_desc">5000 Elemente insgesamt</string>
     <string name="achievement_decisive_desc">200 aufeinanderfolgende Aktionen</string>
-    <string name="achievement_cleanup_champion_desc">2000 Fotos gelöscht</string>
+    <string name="achievement_cleanup_champion_desc">2000 Elemente gelöscht</string>
 
     <string name="settings_title">Einstellungen</string>
     <string name="settings_deletion">Löschen</string>
     <string name="settings_haptics">Haptisches Feedback</string>
     <string name="settings_haptics_desc">Vibrieren bei Wischaktionen</string>
     <string name="settings_use_delete_list">Löschliste verwenden</string>
-    <string name="settings_use_delete_list_desc">Fotos für Sammellöschung vormerken statt sofort zu löschen</string>
+    <string name="settings_use_delete_list_desc">Elemente für Sammellöschung vormerken statt sofort zu löschen</string>
     <string name="settings_privacy">Datenschutz</string>
     <string name="settings_experience">Bedienung</string>
-    <string name="settings_photo_access">Zugriff auf Fotobibliothek</string>
+    <string name="settings_photo_access">Zugriff auf Medienbibliothek</string>
     <string name="settings_photo_access_desc">Wähle aus, welche Fotos und Videos PhotoSoap durchsuchen darf</string>
     <string name="settings_share_analytics">Anonyme Analysen teilen</string>
-    <string name="settings_share_analytics_desc">Teile zusammengefasste Statistiken. Fotos, Dateinamen und Standorte werden niemals geteilt.</string>
+    <string name="settings_share_analytics_desc">Teile zusammengefasste Statistiken. Medieninhalte, Dateinamen und Standorte werden niemals geteilt.</string>
     <string name="settings_privacy_policy">Datenschutzerklärung</string>
     <string name="settings_support">Hilfe &amp; Support</string>
     <string name="settings_about">Über die App</string>
@@ -133,14 +133,14 @@
     <string name="privacy_contact_body">Bei Fragen zu Datenschutz oder Support schreibe an photosoap@brokenmoha.de.</string>
 
     <string name="onboarding_subtitle">Befreie deine Fotobibliothek mit einem Wisch</string>
-    <string name="onboarding_swipe_desc">Nach rechts wischen zum Behalten, nach links zum Löschen. So einfach.</string>
-    <string name="onboarding_privacy_title">100% Privat</string>
+    <string name="onboarding_swipe_desc">Rechts behalten, links zur Löschliste.</string>
+    <string name="onboarding_privacy_title">Medien bleiben lokal</string>
     <string name="onboarding_rewards_title">Erfolge verdienen</string>
     <string name="onboarding_get_started">Los geht\'s</string>
     <string name="onboarding_analytics_title">Anonyme Nutzungszahlen teilen</string>
-    <string name="onboarding_analytics_desc">Optional. Teilt nur zusammengefasste Zahlen—niemals Fotos, Dateinamen oder Standorte. Jederzeit in den Einstellungen änderbar.</string>
-    <string name="onboarding_permission_title">Foto-Zugriff erlauben</string>
-    <string name="onboarding_permission_desc">PhotoSoap benötigt Zugriff auf deine Fotos.</string>
+    <string name="onboarding_analytics_desc">Optional. Teilt nur zusammengefasste Zahlen—niemals Medieninhalte, Dateinamen oder Standorte. Jederzeit in den Einstellungen änderbar.</string>
+    <string name="onboarding_permission_title">Medienzugriff erlauben</string>
+    <string name="onboarding_permission_desc">PhotoSoap benötigt Zugriff auf deine Fotos und Videos, damit du sie prüfen und aufräumen kannst.</string>
     <string name="onboarding_permission_allow">Zugriff erlauben</string>
     <string name="onboarding_permission_open_settings">Einstellungen öffnen</string>
 
@@ -156,7 +156,7 @@
     <string name="daily_goal_complete">Tagesziel erreicht!</string>
     <string name="daily_challenge_review">Prüfen</string>
     <string name="daily_challenge_delete">Löschen</string>
-    <string name="daily_challenge_streak">Serie</string>
+    <string name="daily_challenge_streak">Prüfserie</string>
     <string name="deletion_cancelled">Löschung abgebrochen</string>
     <plurals name="deletion_items_success">
         <item quantity="one">%d Element gelöscht</item>
@@ -169,6 +169,6 @@
     <string name="deletion_failed">Löschen fehlgeschlagen. Versuche es erneut.</string>
     <string name="deletion_manual_required">Auf diesem Gerät ist manuelles Löschen erforderlich</string>
 
-    <string name="limited_access_banner">Eingeschränkter Zugriff. Füge weitere Fotos in den Einstellungen hinzu.</string>
+    <string name="limited_access_banner">Eingeschränkter Zugriff. Füge weitere Medien in den Einstellungen hinzu.</string>
     <string name="manage_access">Verwalten</string>
 </resources>
