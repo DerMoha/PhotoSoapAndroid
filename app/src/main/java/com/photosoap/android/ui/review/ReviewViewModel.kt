@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.annotation.RequiresApi
@@ -450,8 +451,9 @@ class ReviewViewModel @Inject constructor(
                         items.size,
                     )
                 } else {
-                    context.getString(
-                        R.string.deletion_partial_success,
+                    context.resources.getQuantityString(
+                        R.plurals.deletion_partial_success,
+                        items.size,
                         items.size,
                         remaining.size,
                     )
@@ -657,7 +659,7 @@ class ReviewViewModel @Inject constructor(
 
     private fun isMediaStillAvailable(item: PendingDeletionItem): Boolean = try {
         context.contentResolver.query(
-            Uri.parse(item.uri),
+            item.uri.toUri(),
             arrayOf(MediaStore.Files.FileColumns._ID),
             null,
             null,
@@ -675,7 +677,7 @@ class ReviewViewModel @Inject constructor(
      * and current media before asking Android for deletion approval.
      */
     private fun canonicalMediaUri(item: PendingDeletionItem): Uri {
-        val original = Uri.parse(item.uri)
+        val original = item.uri.toUri()
         if (original.authority != MediaStore.AUTHORITY) return original
         if (original.pathSegments.getOrNull(1) == "images" ||
             original.pathSegments.getOrNull(1) == "video"

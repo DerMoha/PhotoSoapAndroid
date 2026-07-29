@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">PhotoSoap</string>
     <string name="tab_review">Durchsehen</string>
     <string name="tab_stats">Statistik</string>
@@ -12,10 +12,7 @@
     <string name="review_empty_description">Deine Bibliothek ist leer oder alles in dieser Ansicht wurde bereits durchgesehen.</string>
     <string name="review_all_reviewed">Alles durchgesehen!</string>
     <string name="review_all_reviewed_description">Du hast alles in dieser Ansicht durchgesehen.</string>
-    <string name="review_all_reviewed_summary">%1$d gelöscht, %2$d behalten</string>
-    <string name="review_delete_list_summary">Löschliste anzeigen (%1$d Einträge)</string>
     <string name="review_again">Erneut durchsehen</string>
-    <string name="review_delete_list_button">Löschliste durchsehen</string>
     <plurals name="review_remaining">
         <item quantity="one">Noch %d Element</item>
         <item quantity="other">Noch %d Elemente</item>
@@ -24,13 +21,6 @@
         <item quantity="one">%d Element in der Löschliste prüfen</item>
         <item quantity="other">%d Elemente in der Löschliste prüfen</item>
     </plurals>
-    <string name="delete_queue_title">Löschliste</string>
-    <string name="delete_queue_count">%d Fotos</string>
-    <string name="delete_queue_empty">Keine Einträge in der Liste</string>
-    <string name="delete_queue_clear">Liste leeren</string>
-    <string name="delete_queue_delete_all">Alle löschen</string>
-    <string name="delete_queue_explainer_title">Bereit zum Löschen</string>
-    <string name="delete_queue_explainer_message">Android wird Sie um Bestätigung bitten. Einmal bestätigte Löschungen können nicht rückgängig gemacht werden.</string>
     <plurals name="delete_queue_tray_summary">
         <item quantity="one">%1$d Element löschen (%2$s)</item>
         <item quantity="other">%1$d Elemente löschen (%2$s)</item>
@@ -64,7 +54,6 @@
     <string name="filter_sort_oldest">Älteste zuerst</string>
     <string name="filter_all_photos">Alle Fotos</string>
     <string name="filter_years">Jahre</string>
-    <string name="filter_months">Monate</string>
     <string name="filter_albums">Alben</string>
     <plurals name="album_item_count">
         <item quantity="one">%d Element</item>
@@ -79,18 +68,15 @@
     <string name="stats_photos_kept">Fotos behalten</string>
     <string name="stats_storage_freed">Speicher freigegeben</string>
     <string name="stats_reviewed_today">Heute durchgesehen</string>
-    <string name="stats_days_in_row">Tage in Folge</string>
-    <string name="stats_most_in_day">Rekord an einem Tag</string>
+    <string name="stats_days_in_row" tools:ignore="Typos">Tage in Folge</string>
     <string name="stats_best_day">Bester Tag</string>
     <string name="stats_best_streak">Beste Serie</string>
     <string name="stats_keep_delete_ratio">Behalten / Löschen Verhältnis</string>
-    <string name="stats_limited_access">Eingeschränkter Bibliothekszugriff — füge in den Einstellungen weitere Fotos hinzu.</string>
     <string name="stats_kept_percent">Behalten %d%%</string>
     <string name="stats_deleted_percent">Gelöscht %d%%</string>
     <string name="stats_no_decisions">Behalte oder lösche ein Element, um dein Verhältnis zu sehen.</string>
 
     <string name="achievements_title">Erfolge</string>
-    <string name="achievements_unlocked">%1$d / %2$d</string>
     <string name="achievements_unlocked_label">Freigeschaltete Erfolge</string>
     <string name="achievement_status_unlocked">✓ Freigeschaltet</string>
     <string name="achievements_first_steps">Erste Schritte</string>
@@ -116,7 +102,6 @@
     <string name="achievement_cleanup_champion_desc">2000 Fotos gelöscht</string>
 
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_feedback">Feedback</string>
     <string name="settings_deletion">Löschen</string>
     <string name="settings_haptics">Haptisches Feedback</string>
     <string name="settings_haptics_desc">Vibrieren bei Wischaktionen</string>
@@ -128,7 +113,6 @@
     <string name="settings_photo_access_desc">Wähle aus, welche Fotos und Videos PhotoSoap durchsuchen darf</string>
     <string name="settings_share_analytics">Anonyme Analysen teilen</string>
     <string name="settings_share_analytics_desc">Teile zusammengefasste Statistiken. Fotos, Dateinamen und Standorte werden niemals geteilt.</string>
-    <string name="settings_developer_options">Entwickleroptionen</string>
     <string name="settings_privacy_policy">Datenschutzerklärung</string>
     <string name="settings_support">Hilfe &amp; Support</string>
     <string name="settings_about">Über die App</string>
@@ -148,18 +132,10 @@
     <string name="privacy_contact_title">Kontakt</string>
     <string name="privacy_contact_body">Bei Fragen zu Datenschutz oder Support schreibe an photosoap@brokenmoha.de.</string>
 
-    <string name="dev_options_title">Entwickleroptionen</string>
-    <string name="dev_reset_onboarding">Onboarding zurücksetzen</string>
-    <string name="dev_reset_onboarding_desc">Onboarding beim nächsten Start erneut anzeigen</string>
-    <string name="dev_reset_overrides">Alle Entwickler-Überschreibungen zurücksetzen</string>
-
-    <string name="onboarding_welcome">Willkommen bei PhotoSoap</string>
     <string name="onboarding_subtitle">Befreie deine Fotobibliothek mit einem Wisch</string>
     <string name="onboarding_swipe_desc">Nach rechts wischen zum Behalten, nach links zum Löschen. So einfach.</string>
     <string name="onboarding_privacy_title">100% Privat</string>
-    <string name="onboarding_privacy_desc">Deine Fotos verlassen nie dein Gerät. Kein Upload. Keine Cloud.</string>
     <string name="onboarding_rewards_title">Erfolge verdienen</string>
-    <string name="onboarding_rewards_desc">Verfolge deinen Fortschritt und schalte Belohnungen frei.</string>
     <string name="onboarding_get_started">Los geht\'s</string>
     <string name="onboarding_analytics_title">Anonyme Nutzungszahlen teilen</string>
     <string name="onboarding_analytics_desc">Optional. Teilt nur zusammengefasste Zahlen—niemals Fotos, Dateinamen oder Standorte. Jederzeit in den Einstellungen änderbar.</string>
@@ -171,29 +147,25 @@
     <string name="undo">Rückgängig</string>
     <string name="cancel">Abbrechen</string>
     <string name="delete">Löschen</string>
-    <string name="confirm">Bestätigen</string>
     <string name="close">Schließen</string>
-    <string name="remove">Entfernen</string>
     <string name="video">Video</string>
     <string name="today_review_count">Heute durchgesehen</string>
-    <string name="done">Fertig</string>
     <string name="back">Zurück</string>
-    <string name="start_over">Neu starten</string>
 
     <string name="achievement_unlocked">Erfolg freigeschaltet!</string>
-    <string name="streak_milestone">Serie: %d!</string>
     <string name="daily_goal_complete">Tagesziel erreicht!</string>
     <string name="daily_challenge_review">Prüfen</string>
     <string name="daily_challenge_delete">Löschen</string>
     <string name="daily_challenge_streak">Serie</string>
-    <string name="deletion_success">Erfolgreich gelöscht</string>
     <string name="deletion_cancelled">Löschung abgebrochen</string>
-    <string name="queue_pruned">Einige vorgemerkte Fotos wurden bereits entfernt</string>
     <plurals name="deletion_items_success">
         <item quantity="one">%d Element gelöscht</item>
         <item quantity="other">%d Elemente gelöscht</item>
     </plurals>
-    <string name="deletion_partial_success">%1$d gelöscht · %2$d konnten nicht gelöscht werden</string>
+    <plurals name="deletion_partial_success">
+        <item quantity="one">%1$d Element gelöscht · %2$d konnten nicht gelöscht werden</item>
+        <item quantity="other">%1$d Elemente gelöscht · %2$d konnten nicht gelöscht werden</item>
+    </plurals>
     <string name="deletion_failed">Löschen fehlgeschlagen. Versuche es erneut.</string>
     <string name="deletion_manual_required">Auf diesem Gerät ist manuelles Löschen erforderlich</string>
 
