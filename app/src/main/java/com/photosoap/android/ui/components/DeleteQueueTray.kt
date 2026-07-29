@@ -1,7 +1,6 @@
 package com.photosoap.android.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
@@ -51,28 +54,25 @@ fun DeleteQueueTray(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "$itemCount",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.OnDeleteContainer,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "items to delete (${FileSize.format(totalFileSize)})",
+                text = pluralStringResource(
+                    R.plurals.delete_queue_tray_summary,
+                    itemCount,
+                    itemCount,
+                    FileSize.format(totalFileSize),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = AppColors.OnDeleteContainer,
             )
         }
         Row {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Undo,
-                contentDescription = "Undo",
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable(onClick = onUndo),
-                tint = AppColors.OnDeleteContainer,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+            IconButton(onClick = onUndo) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
+                    contentDescription = stringResource(R.string.undo),
+                    tint = AppColors.OnDeleteContainer,
+                )
+            }
             Button(
                 onClick = onViewList,
                 colors = ButtonDefaults.buttonColors(
@@ -80,7 +80,7 @@ fun DeleteQueueTray(
                     contentColor = AppColors.DeleteContainer,
                 ),
             ) {
-                Text("List")
+                Text(stringResource(R.string.delete_queue_list))
             }
         }
     }

@@ -10,11 +10,21 @@
     <string name="review_delete">DELETE</string>
     <string name="review_loading">Loading your library…</string>
     <string name="review_empty">No media to review</string>
+    <string name="review_empty_description">Your library is empty or everything in this view has been reviewed.</string>
     <string name="review_all_reviewed">All Reviewed!</string>
+    <string name="review_all_reviewed_description">You’ve reviewed everything in this view.</string>
     <string name="review_all_reviewed_summary">%1$d deleted, %2$d kept</string>
     <string name="review_delete_list_summary">View delete list (%1$d items)</string>
     <string name="review_again">Review Again</string>
     <string name="review_delete_list_button">Review Delete List</string>
+    <plurals name="review_remaining">
+        <item quantity="one">%d item remaining</item>
+        <item quantity="other">%d items remaining</item>
+    </plurals>
+    <plurals name="review_delete_list_items">
+        <item quantity="one">Review %d item in Delete List</item>
+        <item quantity="other">Review %d items in Delete List</item>
+    </plurals>
     <string name="delete_queue_title">Delete Queue</string>
     <string name="delete_queue_count">%d photos</string>
     <string name="delete_queue_empty">No items in queue</string>
@@ -22,9 +32,33 @@
     <string name="delete_queue_delete_all">Delete All</string>
     <string name="delete_queue_explainer_title">Ready to Delete</string>
     <string name="delete_queue_explainer_message">Android will ask you to confirm the deletion. Once confirmed, photos cannot be recovered.</string>
+    <plurals name="delete_queue_tray_summary">
+        <item quantity="one">%1$d item to delete (%2$s)</item>
+        <item quantity="other">%1$d items to delete (%2$s)</item>
+    </plurals>
+    <plurals name="delete_queue_list_title">
+        <item quantity="one">Delete List (%d)</item>
+        <item quantity="other">Delete List (%d)</item>
+    </plurals>
+    <plurals name="delete_queue_confirm_title">
+        <item quantity="one">Delete %d item?</item>
+        <item quantity="other">Delete %d items?</item>
+    </plurals>
+    <plurals name="delete_queue_delete_button">
+        <item quantity="one">Delete %d item</item>
+        <item quantity="other">Delete %d items</item>
+    </plurals>
+    <string name="delete_queue_list">List</string>
+    <string name="delete_queue_clear_all">Clear all</string>
+    <string name="delete_queue_remove_item">Remove from delete list</string>
+    <string name="delete_confirm_system_message">Android will ask you to approve this deletion. PhotoSoap cannot delete media without your explicit permission.</string>
+    <string name="delete_confirm_irreversible">Deleted media may not be recoverable.</string>
 
     <!-- Filter -->
     <string name="filter_title">Filter</string>
+    <string name="filter_media_type">Media type</string>
+    <string name="filter_sort_order">Sort order</string>
+    <string name="filter_browse">Browse library</string>
     <string name="filter_all_media">All</string>
     <string name="filter_photos">Photos</string>
     <string name="filter_videos">Videos</string>
@@ -34,9 +68,15 @@
     <string name="filter_years">Years</string>
     <string name="filter_months">Months</string>
     <string name="filter_albums">Albums</string>
+    <plurals name="album_item_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
 
     <!-- Stats -->
     <string name="stats_title">Statistics</string>
+    <string name="stats_overview">Overview</string>
+    <string name="stats_streaks">Streaks</string>
     <string name="stats_photos_reviewed">Photos Reviewed</string>
     <string name="stats_photos_deleted">Photos Deleted</string>
     <string name="stats_photos_kept">Photos Kept</string>
@@ -44,12 +84,19 @@
     <string name="stats_reviewed_today">Reviewed Today</string>
     <string name="stats_days_in_row">Days in a Row</string>
     <string name="stats_most_in_day">Most in a Day</string>
+    <string name="stats_best_day">Best Day</string>
+    <string name="stats_best_streak">Best Streak</string>
     <string name="stats_keep_delete_ratio">Keep / Delete Ratio</string>
     <string name="stats_limited_access">Limited library access — add more photos in Settings.</string>
+    <string name="stats_kept_percent">Kept %d%%</string>
+    <string name="stats_deleted_percent">Deleted %d%%</string>
+    <string name="stats_no_decisions">Keep or delete an item to see your decision ratio.</string>
 
     <!-- Achievements -->
     <string name="achievements_title">Achievements</string>
     <string name="achievements_unlocked">%1$d / %2$d</string>
+    <string name="achievements_unlocked_label">Achievements Unlocked</string>
+    <string name="achievement_status_unlocked">✓ Unlocked</string>
     <string name="achievements_first_steps">First Steps</string>
     <string name="achievements_spring_cleaning">Spring Cleaning</string>
     <string name="achievements_memory_keeper">Memory Keeper</string>
@@ -75,14 +122,38 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_feedback">Feedback</string>
+    <string name="settings_deletion">Deletion</string>
     <string name="settings_haptics">Haptic Feedback</string>
     <string name="settings_haptics_desc">Vibrate on swipe actions</string>
     <string name="settings_use_delete_list">Use Delete List</string>
     <string name="settings_use_delete_list_desc">Queue photos for batch deletion instead of deleting immediately</string>
     <string name="settings_privacy">Privacy</string>
+    <string name="settings_experience">Experience</string>
+    <string name="settings_photo_access">Photo Library Access</string>
+    <string name="settings_photo_access_desc">Choose which photos and videos PhotoSoap can review</string>
     <string name="settings_share_analytics">Share Anonymous Analytics</string>
-    <string name="settings_share_analytics_desc">Help improve PhotoSoap with anonymous usage data</string>
+    <string name="settings_share_analytics_desc">Share aggregate review and cleanup totals. Photos, filenames, and locations are never shared.</string>
     <string name="settings_developer_options">Developer Options</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_support">Help &amp; Support</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s (%2$d)</string>
+
+    <!-- Privacy policy -->
+    <string name="privacy_last_updated">Last updated: July 29, 2026</string>
+    <string name="privacy_intro_title">Privacy by design</string>
+    <string name="privacy_intro_body">PhotoSoap helps you review your photo library on your device. It is designed not to collect or upload photo or video contents.</string>
+    <string name="privacy_library_title">Photo library access</string>
+    <string name="privacy_library_body">PhotoSoap uses Android media permissions so you can review photos and videos and choose items to delete. Photo and video contents stay on your device. PhotoSoap does not send contents, filenames, media identifiers, locations, or album contents to its metrics service. Android asks for your approval before PhotoSoap deletes protected media.</string>
+    <string name="privacy_device_title">Data stored on your device</string>
+    <string name="privacy_device_body">PhotoSoap stores preferences and review progress locally, including reviewed-item state, the delete list, statistics, streaks, goals, and achievements. This data operates the app and is not used for cross-app tracking.</string>
+    <string name="privacy_analytics_title">Optional usage analytics</string>
+    <string name="privacy_analytics_body">Analytics are off unless you choose to share them. If enabled, PhotoSoap may send a random installation identifier, app version and build, platform, submission date, and daily totals for items reviewed, kept, deleted, and estimated bytes freed to a backend powered by Supabase. It never includes media contents, filenames, media identifiers, locations, contacts, or advertising identifiers. Turning analytics off stops collection, clears pending metrics, and removes the local analytics identifier. Previously submitted aggregate metrics may remain in community totals.</string>
+    <string name="privacy_tracking_title">Tracking and advertising</string>
+    <string name="privacy_tracking_body">PhotoSoap does not track you across apps or websites and does not use data for advertising.</string>
+    <string name="privacy_contact_title">Contact</string>
+    <string name="privacy_contact_body">For privacy or support questions, email photosoap@brokenmoha.de.</string>
 
     <!-- Developer Options -->
     <string name="dev_options_title">Developer Options</string>
@@ -99,6 +170,8 @@
     <string name="onboarding_rewards_title">Earn Achievements</string>
     <string name="onboarding_rewards_desc">Track your progress and unlock rewards as you clean.</string>
     <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_analytics_title">Share anonymous usage totals</string>
+    <string name="onboarding_analytics_desc">Optional. Shares aggregate review and cleanup counts—never photos, filenames, or locations. Change this anytime in Settings.</string>
     <string name="onboarding_permission_title">Allow Photo Access</string>
     <string name="onboarding_permission_desc">PhotoSoap needs access to your photos to help you review and clean up.</string>
     <string name="onboarding_permission_allow">Allow Access</string>
@@ -110,17 +183,32 @@
     <string name="delete">Delete</string>
     <string name="confirm">Confirm</string>
     <string name="close">Close</string>
+    <string name="remove">Remove</string>
+    <string name="video">Video</string>
+    <string name="today_review_count">Reviewed today</string>
     <string name="done">Done</string>
+    <string name="back">Back</string>
     <string name="start_over">Start Over</string>
 
     <!-- Toasts / notifications -->
     <string name="achievement_unlocked">Achievement Unlocked!</string>
     <string name="streak_milestone">Streak: %d!</string>
     <string name="daily_goal_complete">Daily Goal Complete!</string>
+    <string name="daily_challenge_review">Review</string>
+    <string name="daily_challenge_delete">Delete</string>
+    <string name="daily_challenge_streak">Streak</string>
     <string name="deletion_success">Deleted successfully</string>
     <string name="deletion_cancelled">Deletion cancelled</string>
     <string name="queue_pruned">Some queued photos were already removed</string>
+    <plurals name="deletion_items_success">
+        <item quantity="one">%d item deleted</item>
+        <item quantity="other">%d items deleted</item>
+    </plurals>
+    <string name="deletion_partial_success">%1$d deleted · %2$d could not be deleted</string>
+    <string name="deletion_failed">Deletion failed. Try again.</string>
+    <string name="deletion_manual_required">Manual deletion is required on this device</string>
 
     <!-- Review banner -->
     <string name="limited_access_banner">Limited library access. Add more photos in Settings.</string>
+    <string name="manage_access">Manage</string>
 </resources>

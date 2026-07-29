@@ -21,6 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import com.photosoap.android.ui.theme.AppColors
 
 @Composable
@@ -40,19 +43,23 @@ fun DeleteBatchConfirmSheet(
         },
         title = {
             Text(
-                text = "Delete $itemCount Items?",
+                text = pluralStringResource(
+                    R.plurals.delete_queue_confirm_title,
+                    itemCount,
+                    itemCount,
+                ),
                 style = MaterialTheme.typography.headlineSmall,
             )
         },
         text = {
             Column {
                 Text(
-                    text = "Android will ask you to confirm this deletion. PhotoSoap cannot delete photos without your explicit permission.",
+                    text = stringResource(R.string.delete_confirm_system_message),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "This action cannot be undone.",
+                    text = stringResource(R.string.delete_confirm_irreversible),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -66,12 +73,12 @@ fun DeleteBatchConfirmSheet(
                     contentColor = AppColors.OnDelete,
                 ),
             ) {
-                Text("Delete")
+                Text(stringResource(R.string.delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onCancel) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
     )

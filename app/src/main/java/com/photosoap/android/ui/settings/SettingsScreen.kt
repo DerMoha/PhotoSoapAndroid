@@ -1,5 +1,8 @@
 package com.photosoap.android.ui.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,31 +26,39 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.photosoap.android.BuildConfig
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.photosoap.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateToDeveloperOptions: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                        )
                     }
                 },
             )
@@ -59,30 +70,75 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            SettingsGroup("Feedback") {
+            SettingsGroup(stringResource(R.string.settings_experience)) {
                 SettingsToggle(
-                    title = "Haptic Feedback",
-                    subtitle = "Vibrate on swipe and actions",
+                    title = stringResource(R.string.settings_haptics),
+                    subtitle = stringResource(R.string.settings_haptics_desc),
                     checked = state.hapticsEnabled,
                     onCheckedChange = viewModel::toggleHaptics,
                 )
             }
 
-            SettingsGroup("Deletion") {
+            SettingsGroup(stringResource(R.string.settings_deletion)) {
                 SettingsToggle(
-                    title = "Use Delete List",
-                    subtitle = "Queue deletions instead of deleting immediately",
+                    title = stringResource(R.string.settings_use_delete_list),
+                    subtitle = stringResource(R.string.settings_use_delete_list_desc),
                     checked = state.useDeleteQueue,
                     onCheckedChange = viewModel::toggleDeleteQueue,
                 )
             }
 
-            SettingsGroup("Privacy") {
+            SettingsGroup(stringResource(R.string.settings_privacy)) {
+                SettingsTextAction(
+                    text = stringResource(R.string.settings_photo_access),
+                    subtitle = stringResource(R.string.settings_photo_access_desc),
+                    onClick = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            },
+                        )
+                    },
+                )
                 SettingsToggle(
-                    title = "Share Anonymous Analytics",
-                    subtitle = "Help improve PhotoSoap by sharing anonymous usage statistics. No photos are ever shared.",
+                    title = stringResource(R.string.settings_share_analytics),
+                    subtitle = stringResource(R.string.settings_share_analytics_desc),
                     checked = state.analyticsEnabled,
                     onCheckedChange = viewModel::toggleAnalytics,
+                )
+                SettingsTextAction(
+                    text = stringResource(R.string.settings_privacy_policy),
+                    onClick = onNavigateToPrivacyPolicy,
+                )
+                SettingsTextAction(
+                    text = stringResource(R.string.settings_support),
+                    onClick = {
+                        val emailUri = Uri.Builder()
+                            .scheme("mailto")
+                            .opaquePart(SUPPORT_EMAIL)
+                            .appendQueryParameter("subject", "PhotoSoap Android Support")
+                            .appendQueryParameter(
+                                "body",
+                                "PhotoSoap ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})\n\n",
+                            )
+                            .build()
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_SENDTO, emailUri))
+                        }
+                    },
+                )
+            }
+
+            SettingsGroup(stringResource(R.string.settings_about)) {
+                Text(
+                    text = stringResource(
+                        R.string.settings_version,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.VERSION_CODE,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
             }
 
@@ -102,6 +158,8 @@ fun SettingsScreen(
         }
     }
 }
+
+private const val SUPPORT_EMAIL = "photosoap@brokenmoha.de"
 
 @Composable
 private fun SettingsGroup(
@@ -149,5 +207,28 @@ private fun SettingsToggle(
         }
         Spacer(modifier = Modifier.width(16.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun SettingsTextAction(
+    text: String,
+    subtitle: String? = null,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = text)
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }

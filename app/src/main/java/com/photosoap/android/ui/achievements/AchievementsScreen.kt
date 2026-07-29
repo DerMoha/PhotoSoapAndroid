@@ -15,12 +15,15 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,25 +32,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.ui.components.AchievementCard
 import com.photosoap.android.ui.components.ProgressRing
 import com.photosoap.android.ui.theme.AppColors
+import com.photosoap.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsScreen(
+    onNavigateToSettings: () -> Unit = {},
     viewModel: AchievementsViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedAchievement by remember { mutableStateOf<Achievement?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Achievements") },
+                title = { Text(stringResource(R.string.achievements_title)) },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                        )
+                    }
+                },
             )
         },
     ) { padding ->
@@ -85,7 +100,7 @@ fun AchievementsScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Achievements Unlocked",
+                        text = stringResource(R.string.achievements_unlocked_label),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -103,8 +118,8 @@ fun AchievementsScreen(
                 items(Achievement.ALL) { achievement ->
                     val stats = state.stats
                     AchievementCard(
-                        title = achievement.title,
-                        description = achievement.description,
+                        title = achievement.localizedTitle(),
+                        description = achievement.localizedDescription(),
                         emoji = achievement.iconName,
                         isUnlocked = achievement.id in state.unlockedIds,
                         progress = if (stats != null && achievement.isUnlocked(stats)) 1f
@@ -150,13 +165,13 @@ private fun AchievementDetailSheet(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = achievement.title,
+                text = achievement.localizedTitle(),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = achievement.description,
+                text = achievement.localizedDescription(),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -164,7 +179,7 @@ private fun AchievementDetailSheet(
             Spacer(modifier = Modifier.height(16.dp))
             if (isUnlocked) {
                 Text(
-                    text = "✓ Unlocked",
+                    text = stringResource(R.string.achievement_status_unlocked),
                     style = MaterialTheme.typography.titleMedium,
                     color = AppColors.Keep,
                     fontWeight = FontWeight.SemiBold,
@@ -173,4 +188,40 @@ private fun AchievementDetailSheet(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+private fun Achievement.localizedTitle(): String {
+    val resource = when (id) {
+        "first_steps" -> R.string.achievements_first_steps
+        "spring_cleaning" -> R.string.achievements_spring_cleaning
+        "memory_keeper" -> R.string.achievements_memory_keeper
+        "streak_master" -> R.string.achievements_streak_master
+        "daily_devotee" -> R.string.achievements_daily_devotee
+        "storage_saver" -> R.string.achievements_storage_saver
+        "century_club" -> R.string.achievements_century_club
+        "photo_pro" -> R.string.achievements_photo_pro
+        "decisive" -> R.string.achievements_decisive
+        "cleanup_champion" -> R.string.achievements_cleanup_champion
+        else -> return title
+    }
+    return stringResource(resource)
+}
+
+@Composable
+private fun Achievement.localizedDescription(): String {
+    val resource = when (id) {
+        "first_steps" -> R.string.achievement_first_steps_desc
+        "spring_cleaning" -> R.string.achievement_spring_cleaning_desc
+        "memory_keeper" -> R.string.achievement_memory_keeper_desc
+        "streak_master" -> R.string.achievement_streak_master_desc
+        "daily_devotee" -> R.string.achievement_daily_devotee_desc
+        "storage_saver" -> R.string.achievement_storage_saver_desc
+        "century_club" -> R.string.achievement_century_club_desc
+        "photo_pro" -> R.string.achievement_photo_pro_desc
+        "decisive" -> R.string.achievement_decisive_desc
+        "cleanup_champion" -> R.string.achievement_cleanup_champion_desc
+        else -> return description
+    }
+    return stringResource(resource)
 }

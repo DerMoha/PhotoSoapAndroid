@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -25,7 +27,9 @@ import androidx.navigation.toRoute
 import com.photosoap.android.ui.achievements.AchievementsScreen
 import com.photosoap.android.ui.review.ReviewScreen
 import com.photosoap.android.ui.settings.SettingsScreen
+import com.photosoap.android.ui.settings.PrivacyPolicyScreen
 import com.photosoap.android.ui.stats.StatsScreen
+import com.photosoap.android.R
 
 @kotlinx.serialization.Serializable
 sealed interface AppDestination {
@@ -43,23 +47,27 @@ sealed interface AppDestination {
 
     @kotlinx.serialization.Serializable
     data object DeveloperOptions : AppDestination
+
+    @kotlinx.serialization.Serializable
+    data object PrivacyPolicy : AppDestination
 }
 
 data class BottomNavItem(
     val route: AppDestination,
     val icon: ImageVector,
-    val label: String,
+    @StringRes val labelRes: Int,
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(AppDestination.Stats, Icons.Filled.BarChart, "Stats"),
-    BottomNavItem(AppDestination.Review, Icons.Filled.Collections, "Review"),
-    BottomNavItem(AppDestination.Achievements, Icons.Filled.EmojiEvents, "Achievements"),
+    BottomNavItem(AppDestination.Review, Icons.Filled.Collections, R.string.tab_review),
+    BottomNavItem(AppDestination.Stats, Icons.Filled.BarChart, R.string.tab_stats),
+    BottomNavItem(AppDestination.Achievements, Icons.Filled.EmojiEvents, R.string.tab_achievements),
 )
 
 @Composable
 fun AppNavHost(
     navController: NavHostController = rememberNavController(),
+    isLimitedAccess: Boolean = false,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -73,9 +81,10 @@ fun AppNavHost(
             if (showBottomBar) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
+                        val label = stringResource(item.labelRes)
                         NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
+                            icon = { Icon(item.icon, contentDescription = label) },
+                            label = { Text(label) },
                             selected = currentDestination?.hasRoute(item.route::class) == true,
                             onClick = {
                                 navController.navigate(item.route) {
@@ -94,7 +103,7 @@ fun AppNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppDestination.Stats,
+            startDestination = AppDestination.Review,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable<AppDestination.Stats> {
@@ -103,16 +112,26 @@ fun AppNavHost(
                 )
             }
             composable<AppDestination.Review> {
-                ReviewScreen()
+                ReviewScreen(
+                    isLimitedAccess = isLimitedAccess,
+                    onManageAccess = { navController.navigate(AppDestination.Settings) },
+                    onNavigateToSettings = { navController.navigate(AppDestination.Settings) },
+                )
             }
             composable<AppDestination.Achievements> {
-                AchievementsScreen()
+                AchievementsScreen(
+                    onNavigateToSettings = { navController.navigate(AppDestination.Settings) },
+                )
             }
             composable<AppDestination.Settings> {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
+                    onNavigateToPrivacyPolicy = { navController.navigate(AppDestination.PrivacyPolicy) },
                     onNavigateToDeveloperOptions = { navController.navigate(AppDestination.DeveloperOptions) },
                 )
+            }
+            composable<AppDestination.PrivacyPolicy> {
+                PrivacyPolicyScreen(onNavigateBack = { navController.popBackStack() })
             }
             composable<AppDestination.DeveloperOptions> {
                 com.photosoap.android.ui.settings.DeveloperOptionsScreen(

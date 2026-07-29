@@ -27,6 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.ReviewFilter
 import com.photosoap.android.domain.model.SortOrder
@@ -64,7 +67,7 @@ fun FilterSheet(
                 .padding(horizontal = 16.dp),
         ) {
             Text(
-                text = "Media Type",
+                text = stringResource(R.string.filter_media_type),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -82,7 +85,16 @@ fun FilterSheet(
                         onClick = { onKindSelected(kind) },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = kind.label, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = stringResource(
+                            when (kind) {
+                                MediaKind.PHOTOS -> R.string.filter_photos
+                                MediaKind.VIDEOS -> R.string.filter_videos
+                                MediaKind.ALL -> R.string.filter_all_media
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
             }
 
@@ -91,7 +103,7 @@ fun FilterSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Sort Order",
+                text = stringResource(R.string.filter_sort_order),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -109,7 +121,15 @@ fun FilterSheet(
                         onClick = { onSortSelected(order) },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = order.label, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = stringResource(
+                            when (order) {
+                                SortOrder.NEWEST_FIRST -> R.string.filter_sort_newest
+                                SortOrder.OLDEST_FIRST -> R.string.filter_sort_oldest
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
             }
 
@@ -118,7 +138,7 @@ fun FilterSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Browse",
+                text = stringResource(R.string.filter_browse),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -136,7 +156,10 @@ fun FilterSheet(
                     onClick = { onFilterSelected(ReviewFilter.All) },
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "All Photos", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = stringResource(R.string.filter_all_photos),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -147,7 +170,10 @@ fun FilterSheet(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onDeselectYear) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                            )
                         }
                         Text(
                             text = selectedYear.toString(),
@@ -191,7 +217,7 @@ fun FilterSheet(
 
             if (selectedYear == null) {
                 Text(
-                    text = "Years",
+                    text = stringResource(R.string.filter_years),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -220,7 +246,7 @@ fun FilterSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Albums",
+                    text = stringResource(R.string.filter_albums),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -247,7 +273,18 @@ fun FilterSheet(
                                 },
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = album.name, style = MaterialTheme.typography.bodyLarge)
+                            Column {
+                                Text(text = album.name, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.album_item_count,
+                                        album.count,
+                                        album.count,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }

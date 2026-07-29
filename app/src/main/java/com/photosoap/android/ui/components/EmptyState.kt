@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun EmptyState(
+    modifier: Modifier = Modifier,
     icon: @Composable () -> Unit = {
         Icon(
             imageVector = Icons.Filled.ImageNotSupported,
@@ -30,7 +31,6 @@ fun EmptyState(
     },
     title: String,
     subtitle: String = "",
-    modifier: Modifier = Modifier,
     action: @Composable () -> Unit = {},
 ) {
     Box(

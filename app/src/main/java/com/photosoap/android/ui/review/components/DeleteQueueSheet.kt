@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -32,6 +33,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.PendingDeletionItem
 import com.photosoap.android.ui.theme.AppColors
@@ -46,7 +50,7 @@ fun DeleteQueueSheet(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -63,12 +67,16 @@ fun DeleteQueueSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Delete List (${items.size})",
+                    text = pluralStringResource(
+                        R.plurals.delete_queue_list_title,
+                        items.size,
+                        items.size,
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 TextButton(onClick = onClearAll) {
-                    Text("Clear All", color = AppColors.Delete)
+                    Text(stringResource(R.string.delete_queue_clear_all), color = AppColors.Delete)
                 }
             }
 
@@ -104,14 +112,13 @@ fun DeleteQueueSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Remove",
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clickable { onRemove(item.id) },
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        IconButton(onClick = { onRemove(item.id) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.delete_queue_remove_item),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -128,7 +135,13 @@ fun DeleteQueueSheet(
             ) {
                 Icon(Icons.Filled.Delete, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Delete ${items.size} Items")
+                Text(
+                    pluralStringResource(
+                        R.plurals.delete_queue_delete_button,
+                        items.size,
+                        items.size,
+                    )
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

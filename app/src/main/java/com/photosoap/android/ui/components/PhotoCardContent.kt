@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.Photo
 import com.photosoap.android.util.FileSize
@@ -34,8 +36,7 @@ fun PhotoCardContent(
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(440.dp),
+            .fillMaxSize(),
     ) {
         AsyncImage(
             model = photo.uri,
@@ -63,7 +64,7 @@ fun PhotoCardContent(
                 if (photo.isVideo) {
                     Icon(
                         imageVector = Icons.Filled.Videocam,
-                        contentDescription = "Video",
+                        contentDescription = stringResource(R.string.video),
                         tint = androidx.compose.ui.graphics.Color.White,
                         modifier = Modifier.size(16.dp),
                     )

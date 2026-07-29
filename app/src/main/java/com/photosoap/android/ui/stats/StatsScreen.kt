@@ -30,17 +30,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photosoap.android.ui.components.StatCard
 import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
+import com.photosoap.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,15 +50,18 @@ fun StatsScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PhotoSoap") },
+                title = { Text(stringResource(R.string.stats_title)) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                        )
                     }
                 },
             )
@@ -81,7 +86,7 @@ fun StatsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Overview",
+                    text = stringResource(R.string.stats_overview),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -91,13 +96,13 @@ fun StatsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     StatCard(
-                        title = "Photos Reviewed",
+                        title = stringResource(R.string.stats_photos_reviewed),
                         value = "${state.stats?.totalReviewed ?: 0}",
                         accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
-                        title = "Photos Deleted",
+                        title = stringResource(R.string.stats_photos_deleted),
                         value = "${state.stats?.totalDeleted ?: 0}",
                         accentColor = AppColors.Delete,
                         modifier = Modifier.weight(1f),
@@ -109,13 +114,13 @@ fun StatsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     StatCard(
-                        title = "Photos Kept",
+                        title = stringResource(R.string.stats_photos_kept),
                         value = "${state.stats?.totalKept ?: 0}",
                         accentColor = AppColors.Keep,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
-                        title = "Storage Freed",
+                        title = stringResource(R.string.stats_storage_freed),
                         value = FileSize.format(state.stats?.storageFreed ?: 0),
                         accentColor = AppColors.Achievement,
                         modifier = Modifier.weight(1f),
@@ -124,7 +129,7 @@ fun StatsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Streaks",
+                    text = stringResource(R.string.stats_streaks),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -134,13 +139,13 @@ fun StatsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     StatCard(
-                        title = "Reviewed Today",
+                        title = stringResource(R.string.stats_reviewed_today),
                         value = "${state.stats?.todayReviewCount ?: 0}",
                         accentColor = AppColors.Warning,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
-                        title = "Best Day",
+                        title = stringResource(R.string.stats_best_day),
                         value = "${state.stats?.bestDayReviewCount ?: 0}",
                         accentColor = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
@@ -152,13 +157,13 @@ fun StatsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     StatCard(
-                        title = "Best Streak",
+                        title = stringResource(R.string.stats_best_streak),
                         value = "${state.stats?.bestStreak ?: 0}",
                         accentColor = AppColors.Warning,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
-                        title = "Day Streak",
+                        title = stringResource(R.string.stats_days_in_row),
                         value = "${state.stats?.dayStreak ?: 0}",
                         accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
@@ -167,19 +172,22 @@ fun StatsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Keep / Delete Ratio",
+                    text = stringResource(R.string.stats_keep_delete_ratio),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
 
-                Box(
+                val hasDecisions = ((state.stats?.totalKept ?: 0) +
+                    (state.stats?.totalDeleted ?: 0)) > 0
+                if (hasDecisions) {
+                    Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(24.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
-                ) {
-                    Row(modifier = Modifier.fillMaxSize()) {
+                    ) {
+                        Row(modifier = Modifier.fillMaxSize()) {
                         Box(
                             modifier = Modifier
                                 .weight(state.keepDeleteRatio.coerceAtLeast(0.001f))
@@ -192,14 +200,14 @@ fun StatsScreen(
                                 .fillMaxSize()
                                 .background(AppColors.Delete),
                         )
+                        }
                     }
-                }
 
-                Row(
+                    Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
@@ -208,11 +216,14 @@ fun StatsScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Kept ${(state.keepDeleteRatio * 100).toInt()}%",
+                            text = stringResource(
+                                R.string.stats_kept_percent,
+                                (state.keepDeleteRatio * 100).toInt(),
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                         )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
@@ -221,10 +232,20 @@ fun StatsScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Deleted ${((1 - state.keepDeleteRatio) * 100).toInt()}%",
+                            text = stringResource(
+                                R.string.stats_deleted_percent,
+                                ((1 - state.keepDeleteRatio) * 100).toInt(),
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                         )
+                        }
                     }
+                } else {
+                    Text(
+                        text = stringResource(R.string.stats_no_decisions),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))

@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.Photo
 
@@ -122,7 +124,7 @@ fun PhotoPreviewSheet(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.close),
                     modifier = Modifier.size(24.dp),
                     tint = Color.White,
                 )

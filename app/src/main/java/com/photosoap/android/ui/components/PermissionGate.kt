@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -21,10 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.photosoap.android.R
 
 @Composable
 fun PermissionGate(
@@ -32,8 +32,19 @@ fun PermissionGate(
     onResult: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+        )
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+    } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P) {
+        arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        )
     } else {
         arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
@@ -41,8 +52,7 @@ fun PermissionGate(
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
-        val allGranted = results.values.all { it }
-        onResult(allGranted)
+        onResult(results.values.any { it })
     }
 
     if (!isGranted) {
@@ -59,13 +69,13 @@ fun PermissionGate(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Photo Library Access",
+                    text = stringResource(R.string.onboarding_permission_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "PhotoSoap needs access to your photo library to help you review and clean up your photos.",
+                    text = stringResource(R.string.onboarding_permission_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -73,7 +83,7 @@ fun PermissionGate(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = { launcher.launch(permissions) }) {
-                    Text("Allow Access")
+                    Text(stringResource(R.string.onboarding_permission_allow))
                 }
             }
         }

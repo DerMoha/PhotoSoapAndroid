@@ -24,6 +24,8 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.ui.theme.AppMotion
 import kotlinx.coroutines.coroutineScope
@@ -115,6 +117,12 @@ fun SwipeableCard(
                     rotationZ = rotation.value
                     scaleX = scale.value
                     scaleY = scale.value
+                }
+                .semantics {
+                    onClick {
+                        if (enabled && !isAnimating) onTap()
+                        enabled && !isAnimating
+                    }
                 }
                 .pointerInput(enabled, isAnimating) {
                     if (!enabled || isAnimating) return@pointerInput

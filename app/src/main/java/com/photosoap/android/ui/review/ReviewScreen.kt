@@ -17,26 +17,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photosoap.android.domain.model.SwipeDirection
 import com.photosoap.android.ui.components.DeleteQueueTray
 import com.photosoap.android.ui.components.EmptyState
@@ -49,18 +55,21 @@ import com.photosoap.android.ui.review.components.DeleteQueueSheet
 import com.photosoap.android.ui.review.components.DeleteBatchConfirmSheet
 import com.photosoap.android.ui.review.components.PhotoPreviewSheet
 import com.photosoap.android.ui.theme.AppColors
+import com.photosoap.android.R
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewScreen(
+    isLimitedAccess: Boolean = false,
+    onManageAccess: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val deletionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        viewModel.onDeletionComplete(result.resultCode == android.app.Activity.RESULT_OK)
+        viewModel.onDeletionRequestResult(result.resultCode == android.app.Activity.RESULT_OK)
     }
 
     LaunchedEffect(state.pendingDeleteIntentSender) {
@@ -78,8 +87,31 @@ fun ReviewScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.tab_review)) },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                        )
+                    }
+                },
+            )
+        },
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+        ) {
+            if (isLimitedAccess) {
+                LimitedAccessBanner(onManageAccess = onManageAccess)
+            }
+            Box(modifier = Modifier.weight(1f)) {
+            when {
             state.isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -89,7 +121,7 @@ fun ReviewScreen(
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Loading your library...",
+                            text = stringResource(R.string.review_loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -99,9 +131,7 @@ fun ReviewScreen(
 
             state.isReviewComplete -> {
                 ReviewCompleteContent(
-                    stats = state.stats,
                     pendingDeletionCount = state.pendingDeletions.size,
-                    totalFileSize = state.totalDeletionFileSize,
                     onStartOver = { viewModel.onEvent(ReviewUiEvent.StartOver) },
                     onReviewDeletions = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
                 )
@@ -109,8 +139,8 @@ fun ReviewScreen(
 
             state.photos.isEmpty() -> {
                 EmptyState(
-                    title = "No photos to review",
-                    subtitle = "Your library is empty or all photos have been reviewed.",
+                    title = stringResource(R.string.review_empty),
+                    subtitle = stringResource(R.string.review_empty_description),
                 )
             }
 
@@ -135,7 +165,7 @@ fun ReviewScreen(
                     ) {
                         state.currentPhoto?.let { photo ->
                             SwipeableCard(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxSize(),
                                 resetKey = photo.uri,
                                 enabled = true,
                                 onSwiped = { direction ->
@@ -147,13 +177,13 @@ fun ReviewScreen(
                                 overlayContent = { direction ->
                                     if (direction == SwipeDirection.KEEP) {
                                         SwipeHintBadge(
-                                            text = "Keep",
+                                            text = stringResource(R.string.review_keep),
                                             direction = direction,
                                             modifier = Modifier.align(Alignment.CenterStart),
                                         )
                                     } else if (direction == SwipeDirection.DELETE) {
                                         SwipeHintBadge(
-                                            text = "Delete",
+                                            text = stringResource(R.string.review_delete),
                                             direction = direction,
                                             modifier = Modifier.align(Alignment.CenterEnd),
                                         )
@@ -167,7 +197,11 @@ fun ReviewScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${state.photosRemaining} remaining",
+                        text = pluralStringResource(
+                            R.plurals.review_remaining,
+                            state.photosRemaining,
+                            state.photosRemaining,
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -196,7 +230,7 @@ fun ReviewScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.size(8.dp))
-                            Text("Delete")
+                            Text(stringResource(R.string.review_delete))
                         }
 
                         Button(
@@ -213,28 +247,30 @@ fun ReviewScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.size(8.dp))
-                            Text("Keep")
+                            Text(stringResource(R.string.review_keep))
                         }
                     }
 
-                    if (state.hasPendingDeletions) {
-                        DeleteQueueTray(
-                            itemCount = state.pendingDeletions.size,
-                            totalFileSize = state.totalDeletionFileSize,
-                            onUndo = { viewModel.onEvent(ReviewUiEvent.UndoLastDeletion) },
-                            onViewList = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
-                        )
-                    }
                 }
             }
-        }
+            }
 
-        ToastOverlay(
-            visible = state.toastMessage != null,
-            message = state.toastMessage ?: "",
-            emoji = state.toastEmoji,
-            modifier = Modifier.align(Alignment.TopCenter),
-        )
+            ToastOverlay(
+                visible = state.toastMessage != null,
+                message = state.toastMessage ?: "",
+                emoji = state.toastEmoji,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+            if (state.hasPendingDeletions) {
+                DeleteQueueTray(
+                    itemCount = state.pendingDeletions.size,
+                    totalFileSize = state.totalDeletionFileSize,
+                    onUndo = { viewModel.onEvent(ReviewUiEvent.UndoLastDeletion) },
+                    onViewList = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
+                )
+            }
+    }
     }
 
     if (state.showFilterSheet) {
@@ -260,7 +296,7 @@ fun ReviewScreen(
             items = state.pendingDeletions,
             onRemove = { viewModel.onEvent(ReviewUiEvent.RemoveFromQueue(it)) },
             onClearAll = { viewModel.onEvent(ReviewUiEvent.ClearQueue) },
-            onDelete = { viewModel.onEvent(ReviewUiEvent.ConfirmDelete) },
+            onDelete = { viewModel.onEvent(ReviewUiEvent.RequestDeleteConfirmation) },
             onDismiss = { viewModel.onEvent(ReviewUiEvent.DismissDeleteQueue) },
         )
     }
@@ -279,6 +315,30 @@ fun ReviewScreen(
                 photo = photo,
                 onDismiss = { viewModel.onEvent(ReviewUiEvent.ClosePhotoPreview) },
             )
+        }
+    }
+}
+
+@Composable
+private fun LimitedAccessBanner(onManageAccess: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.limited_access_banner),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onManageAccess) {
+                Text(stringResource(R.string.manage_access))
+            }
         }
     }
 }
@@ -319,9 +379,7 @@ private fun SwipeHintBadge(
 
 @Composable
 private fun ReviewCompleteContent(
-    stats: com.photosoap.android.domain.model.UserStats?,
     pendingDeletionCount: Int,
-    totalFileSize: Long,
     onStartOver: () -> Unit,
     onReviewDeletions: () -> Unit,
 ) {
@@ -338,25 +396,31 @@ private fun ReviewCompleteContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "All Reviewed!",
+            text = stringResource(R.string.review_all_reviewed),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "You've reviewed all photos in this view.",
+            text = stringResource(R.string.review_all_reviewed_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onStartOver) {
-            Text("Review Again")
+            Text(stringResource(R.string.review_again))
         }
         if (pendingDeletionCount > 0) {
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(onClick = onReviewDeletions) {
-                Text("Review $pendingDeletionCount Items in Delete List")
+                Text(
+                    pluralStringResource(
+                        R.plurals.review_delete_list_items,
+                        pendingDeletionCount,
+                        pendingDeletionCount,
+                    )
+                )
             }
         }
     }

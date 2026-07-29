@@ -9,11 +9,21 @@
     <string name="review_delete">LÖSCHEN</string>
     <string name="review_loading">Bibliothek wird geladen…</string>
     <string name="review_empty">Keine Medien zum Durchsehen</string>
+    <string name="review_empty_description">Deine Bibliothek ist leer oder alles in dieser Ansicht wurde bereits durchgesehen.</string>
     <string name="review_all_reviewed">Alles durchgesehen!</string>
+    <string name="review_all_reviewed_description">Du hast alles in dieser Ansicht durchgesehen.</string>
     <string name="review_all_reviewed_summary">%1$d gelöscht, %2$d behalten</string>
     <string name="review_delete_list_summary">Löschliste anzeigen (%1$d Einträge)</string>
     <string name="review_again">Erneut durchsehen</string>
     <string name="review_delete_list_button">Löschliste durchsehen</string>
+    <plurals name="review_remaining">
+        <item quantity="one">Noch %d Element</item>
+        <item quantity="other">Noch %d Elemente</item>
+    </plurals>
+    <plurals name="review_delete_list_items">
+        <item quantity="one">%d Element in der Löschliste prüfen</item>
+        <item quantity="other">%d Elemente in der Löschliste prüfen</item>
+    </plurals>
     <string name="delete_queue_title">Löschliste</string>
     <string name="delete_queue_count">%d Fotos</string>
     <string name="delete_queue_empty">Keine Einträge in der Liste</string>
@@ -21,8 +31,32 @@
     <string name="delete_queue_delete_all">Alle löschen</string>
     <string name="delete_queue_explainer_title">Bereit zum Löschen</string>
     <string name="delete_queue_explainer_message">Android wird Sie um Bestätigung bitten. Einmal bestätigte Löschungen können nicht rückgängig gemacht werden.</string>
+    <plurals name="delete_queue_tray_summary">
+        <item quantity="one">%1$d Element löschen (%2$s)</item>
+        <item quantity="other">%1$d Elemente löschen (%2$s)</item>
+    </plurals>
+    <plurals name="delete_queue_list_title">
+        <item quantity="one">Löschliste (%d)</item>
+        <item quantity="other">Löschliste (%d)</item>
+    </plurals>
+    <plurals name="delete_queue_confirm_title">
+        <item quantity="one">%d Element löschen?</item>
+        <item quantity="other">%d Elemente löschen?</item>
+    </plurals>
+    <plurals name="delete_queue_delete_button">
+        <item quantity="one">%d Element löschen</item>
+        <item quantity="other">%d Elemente löschen</item>
+    </plurals>
+    <string name="delete_queue_list">Liste</string>
+    <string name="delete_queue_clear_all">Alle entfernen</string>
+    <string name="delete_queue_remove_item">Aus der Löschliste entfernen</string>
+    <string name="delete_confirm_system_message">Android wird dich um Bestätigung bitten. PhotoSoap kann Medien nicht ohne deine ausdrückliche Zustimmung löschen.</string>
+    <string name="delete_confirm_irreversible">Gelöschte Medien können möglicherweise nicht wiederhergestellt werden.</string>
 
     <string name="filter_title">Filter</string>
+    <string name="filter_media_type">Medientyp</string>
+    <string name="filter_sort_order">Sortierung</string>
+    <string name="filter_browse">Bibliothek durchsuchen</string>
     <string name="filter_all_media">Alle</string>
     <string name="filter_photos">Fotos</string>
     <string name="filter_videos">Videos</string>
@@ -32,8 +66,14 @@
     <string name="filter_years">Jahre</string>
     <string name="filter_months">Monate</string>
     <string name="filter_albums">Alben</string>
+    <plurals name="album_item_count">
+        <item quantity="one">%d Element</item>
+        <item quantity="other">%d Elemente</item>
+    </plurals>
 
     <string name="stats_title">Statistik</string>
+    <string name="stats_overview">Übersicht</string>
+    <string name="stats_streaks">Serien</string>
     <string name="stats_photos_reviewed">Fotos durchgesehen</string>
     <string name="stats_photos_deleted">Fotos gelöscht</string>
     <string name="stats_photos_kept">Fotos behalten</string>
@@ -41,10 +81,18 @@
     <string name="stats_reviewed_today">Heute durchgesehen</string>
     <string name="stats_days_in_row">Tage in Folge</string>
     <string name="stats_most_in_day">Rekord an einem Tag</string>
+    <string name="stats_best_day">Bester Tag</string>
+    <string name="stats_best_streak">Beste Serie</string>
     <string name="stats_keep_delete_ratio">Behalten / Löschen Verhältnis</string>
+    <string name="stats_limited_access">Eingeschränkter Bibliothekszugriff — füge in den Einstellungen weitere Fotos hinzu.</string>
+    <string name="stats_kept_percent">Behalten %d%%</string>
+    <string name="stats_deleted_percent">Gelöscht %d%%</string>
+    <string name="stats_no_decisions">Behalte oder lösche ein Element, um dein Verhältnis zu sehen.</string>
 
     <string name="achievements_title">Erfolge</string>
     <string name="achievements_unlocked">%1$d / %2$d</string>
+    <string name="achievements_unlocked_label">Freigeschaltete Erfolge</string>
+    <string name="achievement_status_unlocked">✓ Freigeschaltet</string>
     <string name="achievements_first_steps">Erste Schritte</string>
     <string name="achievements_spring_cleaning">Frühjahrsputz</string>
     <string name="achievements_memory_keeper">Erinnerungsbewahrer</string>
@@ -68,14 +116,37 @@
     <string name="achievement_cleanup_champion_desc">2000 Fotos gelöscht</string>
 
     <string name="settings_title">Einstellungen</string>
+    <string name="settings_feedback">Feedback</string>
+    <string name="settings_deletion">Löschen</string>
     <string name="settings_haptics">Haptisches Feedback</string>
     <string name="settings_haptics_desc">Vibrieren bei Wischaktionen</string>
     <string name="settings_use_delete_list">Löschliste verwenden</string>
     <string name="settings_use_delete_list_desc">Fotos für Sammellöschung vormerken statt sofort zu löschen</string>
     <string name="settings_privacy">Datenschutz</string>
+    <string name="settings_experience">Bedienung</string>
+    <string name="settings_photo_access">Zugriff auf Fotobibliothek</string>
+    <string name="settings_photo_access_desc">Wähle aus, welche Fotos und Videos PhotoSoap durchsuchen darf</string>
     <string name="settings_share_analytics">Anonyme Analysen teilen</string>
-    <string name="settings_share_analytics_desc">Hilf PhotoSoap mit anonymen Nutzungsdaten zu verbessern</string>
+    <string name="settings_share_analytics_desc">Teile zusammengefasste Statistiken. Fotos, Dateinamen und Standorte werden niemals geteilt.</string>
     <string name="settings_developer_options">Entwickleroptionen</string>
+    <string name="settings_privacy_policy">Datenschutzerklärung</string>
+    <string name="settings_support">Hilfe &amp; Support</string>
+    <string name="settings_about">Über die App</string>
+    <string name="settings_version">Version %1$s (%2$d)</string>
+
+    <string name="privacy_last_updated">Zuletzt aktualisiert: 29. Juli 2026</string>
+    <string name="privacy_intro_title">Datenschutz als Grundprinzip</string>
+    <string name="privacy_intro_body">PhotoSoap hilft dir, deine Fotobibliothek direkt auf deinem Gerät zu prüfen. Die App ist so konzipiert, dass sie keine Foto- oder Videoinhalte erfasst oder hochlädt.</string>
+    <string name="privacy_library_title">Zugriff auf die Fotobibliothek</string>
+    <string name="privacy_library_body">PhotoSoap verwendet Android-Medienberechtigungen, damit du Fotos und Videos prüfen und zum Löschen auswählen kannst. Foto- und Videoinhalte bleiben auf deinem Gerät. PhotoSoap übermittelt weder Inhalte noch Dateinamen, Medienkennungen, Standorte oder Albuminhalte an den Metrikdienst. Android bittet dich um Zustimmung, bevor PhotoSoap geschützte Medien löscht.</string>
+    <string name="privacy_device_title">Auf deinem Gerät gespeicherte Daten</string>
+    <string name="privacy_device_body">PhotoSoap speichert Einstellungen und Fortschritt lokal, darunter geprüfte Elemente, Löschliste, Statistiken, Serien, Ziele und Erfolge. Diese Daten dienen dem Betrieb der App und nicht der appübergreifenden Nachverfolgung.</string>
+    <string name="privacy_analytics_title">Optionale Nutzungsanalyse</string>
+    <string name="privacy_analytics_body">Analysen sind deaktiviert, bis du sie freiwillig einschaltest. Dann kann PhotoSoap eine zufällige Installationskennung, App-Version und Build, Plattform, Übermittlungsdatum sowie tägliche Summen für geprüfte, behaltene und gelöschte Elemente und geschätzten freigegebenen Speicher an einen von Supabase betriebenen Dienst senden. Medieninhalte, Dateinamen, Medienkennungen, Standorte, Kontakte und Werbe-IDs werden nie gesendet. Beim Ausschalten werden die Erfassung beendet, ausstehende Metriken gelöscht und die lokale Analysekennung entfernt. Bereits übermittelte aggregierte Werte können in Gemeinschaftssummen verbleiben.</string>
+    <string name="privacy_tracking_title">Tracking und Werbung</string>
+    <string name="privacy_tracking_body">PhotoSoap verfolgt dich nicht über Apps oder Websites hinweg und verwendet keine Daten für Werbung.</string>
+    <string name="privacy_contact_title">Kontakt</string>
+    <string name="privacy_contact_body">Bei Fragen zu Datenschutz oder Support schreibe an photosoap@brokenmoha.de.</string>
 
     <string name="dev_options_title">Entwickleroptionen</string>
     <string name="dev_reset_onboarding">Onboarding zurücksetzen</string>
@@ -90,6 +161,8 @@
     <string name="onboarding_rewards_title">Erfolge verdienen</string>
     <string name="onboarding_rewards_desc">Verfolge deinen Fortschritt und schalte Belohnungen frei.</string>
     <string name="onboarding_get_started">Los geht\'s</string>
+    <string name="onboarding_analytics_title">Anonyme Nutzungszahlen teilen</string>
+    <string name="onboarding_analytics_desc">Optional. Teilt nur zusammengefasste Zahlen—niemals Fotos, Dateinamen oder Standorte. Jederzeit in den Einstellungen änderbar.</string>
     <string name="onboarding_permission_title">Foto-Zugriff erlauben</string>
     <string name="onboarding_permission_desc">PhotoSoap benötigt Zugriff auf deine Fotos.</string>
     <string name="onboarding_permission_allow">Zugriff erlauben</string>
@@ -100,15 +173,30 @@
     <string name="delete">Löschen</string>
     <string name="confirm">Bestätigen</string>
     <string name="close">Schließen</string>
+    <string name="remove">Entfernen</string>
+    <string name="video">Video</string>
+    <string name="today_review_count">Heute durchgesehen</string>
     <string name="done">Fertig</string>
+    <string name="back">Zurück</string>
     <string name="start_over">Neu starten</string>
 
     <string name="achievement_unlocked">Erfolg freigeschaltet!</string>
     <string name="streak_milestone">Serie: %d!</string>
     <string name="daily_goal_complete">Tagesziel erreicht!</string>
+    <string name="daily_challenge_review">Prüfen</string>
+    <string name="daily_challenge_delete">Löschen</string>
+    <string name="daily_challenge_streak">Serie</string>
     <string name="deletion_success">Erfolgreich gelöscht</string>
     <string name="deletion_cancelled">Löschung abgebrochen</string>
     <string name="queue_pruned">Einige vorgemerkte Fotos wurden bereits entfernt</string>
+    <plurals name="deletion_items_success">
+        <item quantity="one">%d Element gelöscht</item>
+        <item quantity="other">%d Elemente gelöscht</item>
+    </plurals>
+    <string name="deletion_partial_success">%1$d gelöscht · %2$d konnten nicht gelöscht werden</string>
+    <string name="deletion_failed">Löschen fehlgeschlagen. Versuche es erneut.</string>
+    <string name="deletion_manual_required">Auf diesem Gerät ist manuelles Löschen erforderlich</string>
 
     <string name="limited_access_banner">Eingeschränkter Zugriff. Füge weitere Fotos in den Einstellungen hinzu.</string>
+    <string name="manage_access">Verwalten</string>
 </resources>
