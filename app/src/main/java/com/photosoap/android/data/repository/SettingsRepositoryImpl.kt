@@ -16,6 +16,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override val mediaKind: Flow<String> = dataStore.mediaKind
     override val sortOrder: Flow<String> = dataStore.sortOrder
     override val pendingDeletions: Flow<String> = dataStore.pendingDeletions
+    override val pendingDeletionRequest: Flow<String> = dataStore.pendingDeletionRequest
 
     override suspend fun setOnboardingSeen() = dataStore.setOnboardingSeen()
     override suspend fun resetOnboarding() = dataStore.resetOnboarding()
@@ -25,4 +26,5 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setMediaKind(kind: String) = dataStore.setMediaKind(kind)
     override suspend fun setSortOrder(order: String) = dataStore.setSortOrder(order)
     override suspend fun setPendingDeletions(json: String) = dataStore.setPendingDeletions(json)
+    override suspend fun setPendingDeletionRequest(json: String) = dataStore.setPendingDeletionRequest(json)
 }

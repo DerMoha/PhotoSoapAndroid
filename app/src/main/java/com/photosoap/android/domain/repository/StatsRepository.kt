@@ -7,5 +7,6 @@ interface StatsRepository {
     fun observeStats(): Flow<UserStats?>
     suspend fun getStats(): UserStats?
     suspend fun updateStats(stats: UserStats)
+    suspend fun updateStatsForDeletionOnce(requestId: String, stats: UserStats): Boolean
     suspend fun createIfNeeded(): UserStats
 }

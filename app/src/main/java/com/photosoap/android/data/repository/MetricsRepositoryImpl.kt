@@ -30,6 +30,7 @@ class MetricsRepositoryImpl @Inject constructor(
     override val isEnabled: Flow<Boolean> = dataStore.analyticsEnabled
 
     private val pendingBuckets = mutableListOf<DailyBucket>()
+    private val processedDeletionIds = ArrayDeque<String>()
     private var hasLoadedPendingBuckets = false
 
     override suspend fun trackKept(count: Int) {
@@ -67,6 +68,31 @@ class MetricsRepositoryImpl @Inject constructor(
                 bytesDelta = totalFileSize,
             )
             savePendingBuckets()
+            checkFlushThreshold()
+        }
+        if (shouldFlush) flush()
+    }
+
+    override suspend fun trackBatchDeletionOnce(
+        requestId: String,
+        count: Int,
+        totalFileSize: Long,
+    ) {
+        if (requestId.isBlank() || count <= 0 || !prepareForCollection()) return
+        val shouldFlush = mutex.withLock {
+            loadPendingBucketsLocked()
+            if (requestId in processedDeletionIds) return@withLock false
+            ensureInstallIdLocked()
+            addToDailyBucket(
+                reviewDelta = count,
+                deleteDelta = count,
+                bytesDelta = totalFileSize,
+            )
+            processedDeletionIds.addLast(requestId)
+            while (processedDeletionIds.size > MAX_PROCESSED_DELETION_IDS) {
+                processedDeletionIds.removeFirst()
+            }
+            savePendingBucketsAndDeletionIds()
             checkFlushThreshold()
         }
         if (shouldFlush) flush()
@@ -114,6 +140,7 @@ class MetricsRepositoryImpl @Inject constructor(
             if (dataStore.installId.first().isBlank()) {
                 mutex.withLock {
                     pendingBuckets.clear()
+                    processedDeletionIds.clear()
                     hasLoadedPendingBuckets = false
                 }
             }
@@ -121,6 +148,7 @@ class MetricsRepositoryImpl @Inject constructor(
         }
         mutex.withLock {
             pendingBuckets.clear()
+            processedDeletionIds.clear()
             hasLoadedPendingBuckets = false
         }
         return false
@@ -134,6 +162,9 @@ class MetricsRepositoryImpl @Inject constructor(
                 json.decodeFromString<List<DailyBucket>>(stored)
             }.getOrNull()?.let(pendingBuckets::addAll)
         }
+        runCatching {
+            json.decodeFromString<List<String>>(dataStore.processedMetricDeletions.first())
+        }.getOrNull()?.takeLast(MAX_PROCESSED_DELETION_IDS)?.let(processedDeletionIds::addAll)
         val oldestAllowed = LocalDate.now().minusDays(13)
         pendingBuckets.removeAll { bucket ->
             runCatching { LocalDate.parse(bucket.metricDate) }
@@ -192,5 +223,16 @@ class MetricsRepositoryImpl @Inject constructor(
     private suspend fun savePendingBuckets() {
         val jsonStr = json.encodeToString(pendingBuckets.toList())
         dataStore.setPendingMetrics(jsonStr)
+    }
+
+    private suspend fun savePendingBucketsAndDeletionIds() {
+        dataStore.setPendingMetricsAndProcessedDeletions(
+            json.encodeToString(pendingBuckets.toList()),
+            json.encodeToString(processedDeletionIds.toList()),
+        )
+    }
+
+    private companion object {
+        const val MAX_PROCESSED_DELETION_IDS = 256
     }
 }

@@ -46,6 +46,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.YearMonth
 import java.util.UUID
@@ -71,6 +72,13 @@ class ReviewViewModel @Inject constructor(
 
     private var mediaObserver: ContentObserver? = null
     private var loadPhotosJob: Job? = null
+    private var activeDeletionRequestId: String? = null
+
+    @Serializable
+    private data class DeletionRequestJournal(
+        val requestId: String,
+        val itemIds: List<String>,
+    )
 
     init {
         observeStats()
@@ -133,7 +141,7 @@ class ReviewViewModel @Inject constructor(
                 advanceStats()
                 addToDeletionQueue(photo)
                 if (!_uiState.value.useDeleteQueue) {
-                    executeDeletion()
+                    viewModelScope.launch { executeDeletion() }
                 }
             }
         }
@@ -301,7 +309,7 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private fun executeDeletion() {
+    private suspend fun executeDeletion() {
         val items = _uiState.value.pendingDeletions
         if (items.isEmpty()) return
 
@@ -312,6 +320,7 @@ class ReviewViewModel @Inject constructor(
                 val deleteRequest = android.provider.MediaStore.createDeleteRequest(
                     context.contentResolver, uris
                 )
+                beginDeletionRequest(items)
                 _uiState.update {
                     it.copy(
                         pendingDeleteIntentSender = deleteRequest.intentSender,
@@ -329,14 +338,16 @@ class ReviewViewModel @Inject constructor(
                 }
             }
         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            viewModelScope.launch { executeLegacyDeletion(items) }
+            val requestId = beginDeletionRequest(items)
+            executeLegacyDeletion(items, requestId)
         } else {
-            viewModelScope.launch { executeAndroid9Deletion(items) }
+            val requestId = beginDeletionRequest(items)
+            executeAndroid9Deletion(items, requestId)
         }
     }
 
     @RequiresApi(android.os.Build.VERSION_CODES.Q)
-    private suspend fun executeLegacyDeletion(items: List<PendingDeletionItem>) {
+    private suspend fun executeLegacyDeletion(items: List<PendingDeletionItem>, requestId: String) {
         val deletedItems = mutableListOf<PendingDeletionItem>()
         for (item in items) {
             try {
@@ -345,7 +356,8 @@ class ReviewViewModel @Inject constructor(
                 }
                 if (deleted) deletedItems += item
             } catch (recoverable: android.app.RecoverableSecurityException) {
-                if (deletedItems.isNotEmpty()) completeConfirmedDeletions(deletedItems)
+                if (deletedItems.isNotEmpty()) completeConfirmedDeletions(deletedItems, requestId)
+                beginDeletionRequest(_uiState.value.pendingDeletions)
                 _uiState.update {
                     it.copy(
                         pendingDeleteIntentSender = recoverable.userAction.actionIntent.intentSender,
@@ -363,8 +375,9 @@ class ReviewViewModel @Inject constructor(
         }
 
         if (deletedItems.isNotEmpty()) {
-            completeConfirmedDeletions(deletedItems)
+            completeConfirmedDeletions(deletedItems, requestId)
         } else {
+            clearDeletionRequest()
             _uiState.update {
                 it.copy(
                     toastMessage = context.getString(R.string.deletion_manual_required),
@@ -375,7 +388,7 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private suspend fun executeAndroid9Deletion(items: List<PendingDeletionItem>) {
+    private suspend fun executeAndroid9Deletion(items: List<PendingDeletionItem>, requestId: String) {
         val deletedItems = withContext(ioDispatcher) {
             items.filter { item ->
                 try {
@@ -388,8 +401,9 @@ class ReviewViewModel @Inject constructor(
             }
         }
         if (deletedItems.isNotEmpty()) {
-            completeConfirmedDeletions(deletedItems)
+            completeConfirmedDeletions(deletedItems, requestId)
         } else {
+            clearDeletionRequest()
             _uiState.update {
                 it.copy(
                     toastMessage = context.getString(R.string.deletion_manual_required),
@@ -401,24 +415,34 @@ class ReviewViewModel @Inject constructor(
     }
 
     fun onDeletionRequestResult(success: Boolean) {
-        if (_uiState.value.pendingLegacyDeleteRetry) {
-            _uiState.update {
-                it.copy(
-                    pendingDeleteIntentSender = null,
-                    pendingLegacyDeleteRetry = false,
-                )
+        viewModelScope.launch {
+            if (_uiState.value.pendingLegacyDeleteRetry) {
+                _uiState.update {
+                    it.copy(
+                        pendingDeleteIntentSender = null,
+                        pendingLegacyDeleteRetry = false,
+                    )
+                }
+                if (success) executeDeletion() else finishDeletion(false)
+            } else {
+                finishDeletion(success)
             }
-            if (success) executeDeletion() else onDeletionComplete(false)
-        } else {
-            onDeletionComplete(success)
         }
     }
 
     fun onDeletionComplete(success: Boolean) {
+        viewModelScope.launch { finishDeletion(success) }
+    }
+
+    private suspend fun finishDeletion(success: Boolean) {
         val items = _uiState.value.pendingDeletions
         if (success) {
-            completeConfirmedDeletions(items)
+            completeConfirmedDeletions(
+                items,
+                activeDeletionRequestId ?: UUID.randomUUID().toString(),
+            )
         } else {
+            clearDeletionRequest()
             _uiState.update {
                 it.copy(
                     pendingDeleteIntentSender = null,
@@ -430,19 +454,22 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private fun completeConfirmedDeletions(items: List<PendingDeletionItem>) {
+    private suspend fun completeConfirmedDeletions(
+        items: List<PendingDeletionItem>,
+        requestId: String,
+    ) {
         if (items.isEmpty()) return
         val deletedIds = items.mapTo(mutableSetOf()) { it.id }
         val remaining = _uiState.value.pendingDeletions.filterNot { it.id in deletedIds }
-        viewModelScope.launch {
-            recordConfirmedDeletions(items)
-            metricsRepository.trackBatchDeletion(items.size, items.sumOf { it.fileSize })
-        }
+        recordConfirmedDeletions(requestId, items)
+        metricsRepository.trackBatchDeletionOnce(requestId, items.size, items.sumOf { it.fileSize })
+        settingsRepository.setPendingDeletions(json.encodeToString(remaining))
+        clearDeletionRequest()
         _uiState.update {
             it.copy(
                 pendingDeletions = remaining,
-                    pendingDeleteIntentSender = null,
-                    pendingLegacyDeleteRetry = false,
+                pendingDeleteIntentSender = null,
+                pendingLegacyDeleteRetry = false,
                 showDeleteConfirmSheet = false,
                 toastMessage = if (remaining.isEmpty()) {
                     context.resources.getQuantityString(
@@ -461,7 +488,6 @@ class ReviewViewModel @Inject constructor(
                 toastEmoji = if (remaining.isEmpty()) "🧹" else "⚠️",
             )
         }
-        persistPendingDeletions()
     }
 
     private fun removeFromQueue(itemId: String) {
@@ -483,7 +509,10 @@ class ReviewViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setPendingDeletions(serialized) }
     }
 
-    private suspend fun recordConfirmedDeletions(items: List<PendingDeletionItem>) {
+    private suspend fun recordConfirmedDeletions(
+        requestId: String,
+        items: List<PendingDeletionItem>,
+    ) {
         if (items.isEmpty()) return
         statsMutex.withLock {
             val current = statsRepository.getStats() ?: statsRepository.createIfNeeded()
@@ -496,11 +525,25 @@ class ReviewViewModel @Inject constructor(
                 storageFreed = normalized.storageFreed + items.sumOf { it.fileSize },
                 dailyChallengeProgress = normalized.dailyChallengeProgress + challengeDelta,
             )
-            statsRepository.updateStats(updated)
-            _uiState.update { it.copy(stats = updated) }
+            val applied = statsRepository.updateStatsForDeletionOnce(requestId, updated)
+            val persisted = if (applied) updated else statsRepository.getStats() ?: updated
+            _uiState.update { it.copy(stats = persisted) }
         }
         checkAchievements()
         checkDailyChallenge()
+    }
+
+    private suspend fun beginDeletionRequest(items: List<PendingDeletionItem>): String {
+        val requestId = UUID.randomUUID().toString()
+        val journal = DeletionRequestJournal(requestId, items.map { it.id })
+        settingsRepository.setPendingDeletionRequest(json.encodeToString(journal))
+        activeDeletionRequestId = requestId
+        return requestId
+    }
+
+    private suspend fun clearDeletionRequest() {
+        settingsRepository.setPendingDeletionRequest("")
+        activeDeletionRequestId = null
     }
 
     private fun changeMediaKind(kind: MediaKind) {
@@ -636,6 +679,11 @@ class ReviewViewModel @Inject constructor(
                 settingsRepository.pendingDeletions.first(),
             )
         }.getOrDefault(emptyList())
+        val deletionRequest = runCatching {
+            settingsRepository.pendingDeletionRequest.first()
+                .takeIf(String::isNotBlank)
+                ?.let { json.decodeFromString<DeletionRequestJournal>(it) }
+        }.getOrNull()
         val pendingDeletions = withContext(ioDispatcher) {
             storedPendingDeletions.filter(::isMediaStillAvailable)
         }
@@ -653,7 +701,20 @@ class ReviewViewModel @Inject constructor(
         }
         if (prunedItems.isNotEmpty()) {
             settingsRepository.setPendingDeletions(json.encodeToString(pendingDeletions))
-            markQueuedItemsAsKept(prunedItems)
+        }
+
+        if (deletionRequest != null) {
+            activeDeletionRequestId = deletionRequest.requestId
+            val recoveredDeletions = prunedItems.filter { it.id in deletionRequest.itemIds }
+            if (recoveredDeletions.isNotEmpty()) {
+                recordConfirmedDeletions(deletionRequest.requestId, recoveredDeletions)
+                metricsRepository.trackBatchDeletionOnce(
+                    deletionRequest.requestId,
+                    recoveredDeletions.size,
+                    recoveredDeletions.sumOf { it.fileSize },
+                )
+            }
+            clearDeletionRequest()
         }
     }
 
@@ -666,7 +727,9 @@ class ReviewViewModel @Inject constructor(
             null,
         )?.use { it.moveToFirst() } == true
     } catch (_: SecurityException) {
-        false
+        // Permission can be temporarily unavailable while the activity is restoring.
+        // Preserve the user's queue until MediaStore can give a definitive answer.
+        true
     } catch (_: IllegalArgumentException) {
         false
     }

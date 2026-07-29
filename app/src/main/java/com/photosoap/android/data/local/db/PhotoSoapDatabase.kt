@@ -6,6 +6,7 @@ import com.photosoap.android.data.local.db.dao.ReviewedPhotoDao
 import com.photosoap.android.data.local.db.dao.UnlockedAchievementDao
 import com.photosoap.android.data.local.db.dao.UserStatsDao
 import com.photosoap.android.data.local.db.entity.ReviewedPhotoEntity
+import com.photosoap.android.data.local.db.entity.ProcessedDeletionEntity
 import com.photosoap.android.data.local.db.entity.UnlockedAchievementEntity
 import com.photosoap.android.data.local.db.entity.UserStatsEntity
 
@@ -14,8 +15,9 @@ import com.photosoap.android.data.local.db.entity.UserStatsEntity
         UserStatsEntity::class,
         ReviewedPhotoEntity::class,
         UnlockedAchievementEntity::class,
+        ProcessedDeletionEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class PhotoSoapDatabase : RoomDatabase() {

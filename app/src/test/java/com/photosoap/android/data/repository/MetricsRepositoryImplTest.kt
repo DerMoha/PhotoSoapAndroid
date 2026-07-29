@@ -68,6 +68,19 @@ class MetricsRepositoryImplTest {
     }
 
     @Test
+    fun `replayed deletion request is only recorded once`() = runTest {
+        stubEnabled(lastFlush = System.currentTimeMillis())
+        val repository = MetricsRepositoryImpl(dataStore, api)
+
+        repository.trackBatchDeletionOnce("request-1", 2, 4_096)
+        repository.trackBatchDeletionOnce("request-1", 2, 4_096)
+
+        coVerify(exactly = 1) {
+            dataStore.setPendingMetricsAndProcessedDeletions(any(), any())
+        }
+    }
+
+    @Test
     fun `disabled analytics creates no identifier or metrics`() = runTest {
         every { dataStore.analyticsEnabled } returns flowOf(false)
         every { dataStore.installId } returns flowOf("")
@@ -98,6 +111,7 @@ class MetricsRepositoryImplTest {
         every { dataStore.analyticsEnabled } returns flowOf(true)
         every { dataStore.installId } returns MutableStateFlow("install-id")
         every { dataStore.pendingMetrics } returns flowOf(pending)
+        every { dataStore.processedMetricDeletions } returns flowOf("[]")
         every { dataStore.lastMetricsFlush } returns flowOf(lastFlush)
         every { dataStore.metricsDisabledPermanently } returns flowOf(false)
         coEvery { api.ingestMetrics(any()) } returns Result.success(Unit)

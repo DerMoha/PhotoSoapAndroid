@@ -26,6 +26,8 @@ class SettingsDataStore(private val context: Context) {
         private val KEY_LAST_METRICS_FLUSH = longPreferencesKey("last_metrics_flush")
         private val KEY_PENDING_METRICS = stringPreferencesKey("pending_metrics")
         private val KEY_PENDING_DELETIONS = stringPreferencesKey("pending_deletions")
+        private val KEY_PENDING_DELETION_REQUEST = stringPreferencesKey("pending_deletion_request")
+        private val KEY_PROCESSED_METRIC_DELETIONS = stringPreferencesKey("processed_metric_deletions")
         private val KEY_METRICS_DISABLED_PERMANENTLY = booleanPreferencesKey("metrics_disabled_permanently")
     }
 
@@ -39,6 +41,8 @@ class SettingsDataStore(private val context: Context) {
     val lastMetricsFlush: Flow<Long> = context.dataStore.data.map { it[KEY_LAST_METRICS_FLUSH] ?: 0L }
     val pendingMetrics: Flow<String> = context.dataStore.data.map { it[KEY_PENDING_METRICS] ?: "" }
     val pendingDeletions: Flow<String> = context.dataStore.data.map { it[KEY_PENDING_DELETIONS] ?: "[]" }
+    val pendingDeletionRequest: Flow<String> = context.dataStore.data.map { it[KEY_PENDING_DELETION_REQUEST] ?: "" }
+    val processedMetricDeletions: Flow<String> = context.dataStore.data.map { it[KEY_PROCESSED_METRIC_DELETIONS] ?: "[]" }
     val metricsDisabledPermanently: Flow<Boolean> = context.dataStore.data.map { it[KEY_METRICS_DISABLED_PERMANENTLY] ?: false }
 
     suspend fun setOnboardingSeen() {
@@ -63,6 +67,7 @@ class SettingsDataStore(private val context: Context) {
             if (!enabled) {
                 it.remove(KEY_INSTALL_ID)
                 it.remove(KEY_PENDING_METRICS)
+                it.remove(KEY_PROCESSED_METRIC_DELETIONS)
                 it.remove(KEY_LAST_METRICS_FLUSH)
                 it.remove(KEY_METRICS_DISABLED_PERMANENTLY)
             }
@@ -91,6 +96,20 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setPendingDeletions(json: String) {
         context.dataStore.edit { it[KEY_PENDING_DELETIONS] = json }
+    }
+
+    suspend fun setPendingDeletionRequest(json: String) {
+        context.dataStore.edit {
+            if (json.isBlank()) it.remove(KEY_PENDING_DELETION_REQUEST)
+            else it[KEY_PENDING_DELETION_REQUEST] = json
+        }
+    }
+
+    suspend fun setPendingMetricsAndProcessedDeletions(metrics: String, requestIds: String) {
+        context.dataStore.edit {
+            it[KEY_PENDING_METRICS] = metrics
+            it[KEY_PROCESSED_METRIC_DELETIONS] = requestIds
+        }
     }
 
     suspend fun setMetricsDisabledPermanently(disabled: Boolean) {

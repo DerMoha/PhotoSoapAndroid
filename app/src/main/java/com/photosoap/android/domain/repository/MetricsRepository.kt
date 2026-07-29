@@ -9,5 +9,6 @@ interface MetricsRepository {
     suspend fun trackKept(count: Int = 1)
     suspend fun trackDeletion(fileSize: Long)
     suspend fun trackBatchDeletion(count: Int, totalFileSize: Long)
+    suspend fun trackBatchDeletionOnce(requestId: String, count: Int, totalFileSize: Long)
     suspend fun flush()
 }

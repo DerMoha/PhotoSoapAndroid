@@ -24,6 +24,9 @@ class StatsRepositoryImpl @Inject constructor(
         userStatsDao.upsert(stats.toEntity())
     }
 
+    override suspend fun updateStatsForDeletionOnce(requestId: String, stats: UserStats): Boolean =
+        userStatsDao.applyDeletionOnce(requestId, stats.toEntity())
+
     override suspend fun createIfNeeded(): UserStats {
         val existing = userStatsDao.get()
         if (existing != null) return existing.toDomain()

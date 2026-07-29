@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.domain.model.MediaKind
+import com.photosoap.android.domain.model.PendingDeletionItem
 import com.photosoap.android.domain.model.ReviewFilter
 import com.photosoap.android.domain.model.SortOrder
 import com.photosoap.android.domain.model.SwipeDirection
@@ -20,15 +21,20 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.runs
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -55,15 +61,19 @@ class ReviewViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        mockkStatic(Uri::class)
+        every { Uri.parse(any()) } returns mockk(relaxed = true)
         every { context.contentResolver } returns contentResolver
         every { settingsRepository.mediaKind } returns flowOf("all")
         every { settingsRepository.sortOrder } returns flowOf("newest_first")
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
         every { settingsRepository.pendingDeletions } returns flowOf("[]")
+        every { settingsRepository.pendingDeletionRequest } returns flowOf("")
         every { photoRepository.observeReviewedPhotoUris() } returns flowOf(emptyList())
         every { statsRepository.observeStats() } returns flowOf(null)
         coEvery { statsRepository.getStats() } returns null
         coEvery { statsRepository.createIfNeeded() } returns UserStats()
+        coEvery { statsRepository.updateStatsForDeletionOnce(any(), any()) } returns true
         coEvery { achievementRepository.getUnlockedIds() } returns emptyList()
     }
 
@@ -71,6 +81,7 @@ class ReviewViewModelTest {
     fun tearDown() {
         viewModels.forEach { it.viewModelScope.cancel() }
         viewModels.clear()
+        unmockkStatic(Uri::class)
         Dispatchers.resetMain()
     }
 
@@ -194,5 +205,52 @@ class ReviewViewModelTest {
         vm.onEvent(ReviewUiEvent.OpenDeleteQueue)
         vm.onEvent(ReviewUiEvent.DismissDeleteQueue)
         assertFalse(vm.uiState.value.showDeleteQueueSheet)
+    }
+
+    @Test
+    fun `externally removed queued media is pruned without being counted as kept`() = runTest(testDispatcher) {
+        val item = PendingDeletionItem(
+            id = "item-1",
+            uri = "content://media/external/images/media/1",
+            displayName = "photo.jpg",
+            fileSize = 1_024,
+            queuedAt = 1,
+            mimeType = "image/jpeg",
+        )
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(listOf(item)))
+
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.pendingDeletions.isEmpty())
+        coVerify(exactly = 0) { metricsRepository.trackKept(any()) }
+        coVerify { settingsRepository.setPendingDeletions("[]") }
+    }
+
+    @Test
+    fun `missing media from interrupted system request is recovered exactly once`() = runTest(testDispatcher) {
+        val item = PendingDeletionItem(
+            id = "item-1",
+            uri = "content://media/external/images/media/1",
+            displayName = "photo.jpg",
+            fileSize = 2_048,
+            queuedAt = 1,
+            mimeType = "image/jpeg",
+        )
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(listOf(item)))
+        every { settingsRepository.pendingDeletionRequest } returns flowOf(
+            """{"requestId":"request-1","itemIds":["item-1"]}""",
+        )
+
+        createViewModel()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            statsRepository.updateStatsForDeletionOnce("request-1", match {
+                it.totalDeleted == 1 && it.storageFreed == 2_048L
+            })
+            metricsRepository.trackBatchDeletionOnce("request-1", 1, 2_048)
+            settingsRepository.setPendingDeletionRequest("")
+        }
     }
 }
