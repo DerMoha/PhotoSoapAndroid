@@ -1,0 +1,1 @@
+Erste Version mit sicheren Wischgesten, bestätigter Löschliste, Filtern, Zielen, Serien, Statistiken, Dunkelmodus und optionalen datenschutzfreundlichen Community-Analysen.

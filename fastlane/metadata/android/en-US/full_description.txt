@@ -1,0 +1,15 @@
+Take back control of your photo library, a few decisions at a time.
+
+PhotoSoap gives you a focused review flow for photos and videos. Swipe right to keep an item or left to add it to your Delete List. Nothing is removed immediately: you review the list first, and Android asks for final confirmation whenever the system requires it.
+
+Build a manageable cleanup habit with daily goals, streaks, achievements, and clear statistics for reviewed items and estimated storage freed.
+
+Highlights:
+• Fast swipe-based photo and video review
+• A safe Delete List with undo and confirmation
+• Filters for albums, years, months, and media type
+• Full-screen previews and pinch-to-zoom
+• Daily goals, streaks, achievements, and progress statistics
+• Dark mode, German localization, large-text support, and accessible controls
+
+Privacy comes first. Your photos and videos stay on your device. Optional community analytics are off until you explicitly choose to share them, and never include media contents, filenames, media identifiers, or locations.

@@ -1,0 +1,1 @@
+Initial release with safe swipe reviews, a confirmed Delete List, filters, goals, streaks, statistics, dark mode, and optional privacy-focused community analytics.
