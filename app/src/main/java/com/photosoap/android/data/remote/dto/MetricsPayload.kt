@@ -15,6 +15,8 @@ data class MetricsPayload(
     val buildNumber: String = "1",
     @SerialName("submitted_at")
     val submittedAt: String,
+    @SerialName("register_install")
+    val registerInstall: Boolean = true,
     @SerialName("daily_buckets")
     val dailyBuckets: List<DailyBucket>,
 )

@@ -44,6 +44,7 @@ class MetricsRepositoryImplTest {
         MetricsRepositoryImpl(dataStore, api).trackKept()
 
         val bucket = captured.single().dailyBuckets.single()
+        assertEquals(true, captured.single().registerInstall)
         assertEquals(6, bucket.reviewedPhotos)
         assertEquals(1, bucket.deletedPhotos)
         assertEquals(5, bucket.keptPhotos)
