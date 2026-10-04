@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +53,8 @@ fun AchievementsScreen(
     var selectedAchievement by remember { mutableStateOf<Achievement?>(null) }
 
     Scaffold(
+        // The app navigation owns the bottom system inset; TopAppBar owns the top.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.achievements_title)) },
@@ -70,7 +73,7 @@ fun AchievementsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp),
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -110,8 +113,9 @@ fun AchievementsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             LazyVerticalGrid(
+                modifier = Modifier.weight(1f),
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(0.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
