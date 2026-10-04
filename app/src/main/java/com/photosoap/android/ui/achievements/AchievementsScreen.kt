@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,7 +64,7 @@ fun AchievementsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.achievements_title)) },
                 actions = {
-                    IconButton(onClick = onNavigateToSettings) {
+                    FilledTonalIconButton(onClick = onNavigateToSettings) {
                         Icon(
                             Icons.Filled.Settings,
                             contentDescription = stringResource(R.string.settings_title),
@@ -78,41 +80,6 @@ fun AchievementsScreen(
                 .padding(padding)
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ProgressRing(
-                        progress = state.unlockedCount.toFloat(),
-                        target = state.totalCount.toFloat(),
-                        size = 48.dp,
-                        strokeWidth = 4.dp,
-                    )
-                    Column {
-                        Text(
-                            text = "${state.unlockedCount}/${state.totalCount}",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            text = stringResource(R.string.achievements_unlocked_label),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             LazyVerticalGrid(
                 modifier = Modifier.weight(1f),
                 columns = if (largeText) GridCells.Fixed(1) else GridCells.Adaptive(156.dp),
@@ -120,6 +87,43 @@ fun AchievementsScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularWavyProgressIndicator(
+                        progress = { if (state.totalCount > 0) state.unlockedCount.toFloat() / state.totalCount else 0f },
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
+                        waveSpeed = 0.dp,
+                    )
+                    Column {
+                        Text(
+                            text = "${state.unlockedCount}/${state.totalCount}",
+                            style = MaterialTheme.typography.displaySmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.achievements_unlocked_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            }
+
+                }
                 items(Achievement.ALL) { achievement ->
                     val stats = state.stats
                     AchievementCard(

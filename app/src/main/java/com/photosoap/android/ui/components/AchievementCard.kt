@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
+import androidx.compose.animation.animateContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.photosoap.android.R
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AchievementCard(
     title: String,
@@ -34,8 +39,8 @@ fun AchievementCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 168.dp),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth().heightIn(min = 184.dp).animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec()),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (isUnlocked) MaterialTheme.colorScheme.secondaryContainer
                 else MaterialTheme.colorScheme.surfaceContainerLow,
@@ -48,13 +53,13 @@ fun AchievementCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Surface(
-                shape = MaterialTheme.shapes.small,
+                shape = MaterialShapes.Cookie4Sided.toShape(),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.padding(8.dp).size(24.dp))
+                Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(28.dp))
             }
-            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(title, style = MaterialTheme.typography.titleMedium)
             Text(description, style = MaterialTheme.typography.bodySmall)
             if (isUnlocked) {
                 Text(stringResource(R.string.achievement_status_unlocked), style = MaterialTheme.typography.labelMedium)
@@ -64,9 +69,10 @@ fun AchievementCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    LinearProgressIndicator(
+                    LinearWavyProgressIndicator(
                         progress = { progress.coerceIn(0f, 1f) },
                         modifier = Modifier.weight(1f),
+                        waveSpeed = 0.dp,
                     )
                     Text(
                         stringResource(R.string.achievement_progress_percent, (progress.coerceIn(0f, 1f) * 100).toInt()),
