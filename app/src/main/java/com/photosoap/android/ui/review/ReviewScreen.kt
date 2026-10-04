@@ -49,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +80,16 @@ fun ReviewScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val reviewScrollState = rememberScrollState()
+    var cardSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val imageLoader = remember(context) { coil3.SingletonImageLoader.get(context) }
+    val upcoming = state.photos.drop(state.currentIndex + 1).take(2)
+    androidx.compose.runtime.DisposableEffect(upcoming.map { it.uri }, cardSize) {
+        val requests = if (cardSize.width > 0 && cardSize.height > 0) upcoming.map {
+            imageLoader.enqueue(com.photosoap.android.ui.components.reviewImageRequest(context, it, cardSize))
+        } else emptyList()
+        onDispose { requests.forEach { it.dispose() } }
+    }
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
     val view = LocalView.current
     val haptics = remember(view, hapticsEnabled) { HapticsController(view, hapticsEnabled) }
@@ -217,7 +228,8 @@ fun ReviewScreen(
                         modifier = Modifier
                             .then(if (compactHeight) Modifier.height(320.dp) else Modifier.weight(1f))
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .onSizeChanged { cardSize = it },
                         contentAlignment = Alignment.Center,
                     ) {
                         state.currentPhoto?.let { photo ->
@@ -248,7 +260,14 @@ fun ReviewScreen(
                                     }
                                 },
                             ) {
-                                PhotoCardContent(photo = photo)
+                                PhotoCardContent(
+                                    photo = photo,
+                                    imageRequest = remember(photo.uri, cardSize) {
+                                        if (cardSize.width > 0 && cardSize.height > 0)
+                                            com.photosoap.android.ui.components.reviewImageRequest(context, photo, cardSize)
+                                        else null
+                                    },
+                                )
                             }
                         }
                     }

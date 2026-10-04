@@ -26,7 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.photosoap.android.R
 import com.photosoap.android.domain.model.Photo
 import com.photosoap.android.util.DateFormatting
@@ -36,6 +41,7 @@ import com.photosoap.android.util.FileSize
 fun PhotoCardContent(
     photo: Photo,
     modifier: Modifier = Modifier,
+    imageRequest: ImageRequest? = null,
 ) {
     val dateMillis = photo.effectiveDateMillis
 
@@ -43,18 +49,17 @@ fun PhotoCardContent(
         modifier = modifier
             .fillMaxSize(),
     ) {
-        SubcomposeAsyncImage(
-            model = photo.uri,
+        var loading by remember(photo.uri, imageRequest) { mutableStateOf(true) }
+        var failed by remember(photo.uri, imageRequest) { mutableStateOf(false) }
+        if (loading || failed) MediaPlaceholder(photo, isError = failed)
+        AsyncImage(
+            model = imageRequest ?: photo.uri,
             contentDescription = photo.displayName,
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            loading = {
-                MediaPlaceholder(photo = photo, isError = false)
-            },
-            error = {
-                MediaPlaceholder(photo = photo, isError = true)
-            },
+            onLoading = { loading = true; failed = false },
+            onSuccess = { loading = false; failed = false },
+            onError = { loading = false; failed = true },
         )
 
         Column(
