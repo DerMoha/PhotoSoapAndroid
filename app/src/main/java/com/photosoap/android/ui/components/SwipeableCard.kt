@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import com.photosoap.android.domain.model.SwipeDirection
-import com.photosoap.android.ui.theme.AppMotion
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -45,6 +44,8 @@ fun SwipeableCard(
     overlayContent: @Composable (SwipeDirection?) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
+    val swipeOutMotion = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val snapBackMotion = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     val offsetY = remember { Animatable(0f) }
@@ -82,15 +83,15 @@ fun SwipeableCard(
         val targetX = if (direction == SwipeDirection.KEEP) cardWidth * 1.45f else -cardWidth * 1.45f
         scope.launch {
             coroutineScope {
-                launch { offsetX.animateTo(targetX, AppMotion.cardSwipeOut, initialVelocity = initialVelocity) }
-                launch { offsetY.animateTo(0f, AppMotion.cardSwipeOut) }
+                launch { offsetX.animateTo(targetX, swipeOutMotion, initialVelocity = initialVelocity) }
+                launch { offsetY.animateTo(0f, swipeOutMotion) }
                 launch {
                     rotation.animateTo(
                         if (direction == SwipeDirection.KEEP) 10f else -10f,
-                        AppMotion.cardSwipeOut,
+                        swipeOutMotion,
                     )
                 }
-                launch { scale.animateTo(0.97f, AppMotion.cardSwipeOut) }
+                launch { scale.animateTo(0.97f, swipeOutMotion) }
             }
             isAnimating = false
             onSwiped(direction)
@@ -100,10 +101,10 @@ fun SwipeableCard(
     fun snapBack(initialVelocity: Float = 0f) {
         scope.launch {
             coroutineScope {
-                launch { offsetX.animateTo(0f, AppMotion.cardSnapBack, initialVelocity = initialVelocity) }
-                launch { offsetY.animateTo(0f, AppMotion.cardSnapBack) }
-                launch { rotation.animateTo(0f, AppMotion.cardSnapBack) }
-                launch { scale.animateTo(1f, AppMotion.cardSnapBack) }
+                launch { offsetX.animateTo(0f, snapBackMotion, initialVelocity = initialVelocity) }
+                launch { offsetY.animateTo(0f, snapBackMotion) }
+                launch { rotation.animateTo(0f, snapBackMotion) }
+                launch { scale.animateTo(1f, snapBackMotion) }
             }
             onSwipeProgress(0f)
             swipeDirection = null

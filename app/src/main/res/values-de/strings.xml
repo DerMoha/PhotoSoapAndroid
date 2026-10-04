@@ -5,8 +5,8 @@
     <string name="tab_stats">Statistik</string>
     <string name="tab_achievements">Erfolge</string>
 
-    <string name="review_keep">BEHALTEN</string>
-    <string name="review_delete">LÖSCHEN</string>
+    <string name="review_keep">Behalten</string>
+    <string name="review_delete">Löschen</string>
     <string name="review_loading">Bibliothek wird geladen…</string>
     <string name="media_preview_unavailable">Vorschau nicht verfügbar</string>
     <string name="review_empty">Keine Medien zum Durchsehen</string>

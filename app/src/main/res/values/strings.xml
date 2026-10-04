@@ -6,8 +6,8 @@
     <string name="tab_achievements">Achievements</string>
 
     <!-- Review -->
-    <string name="review_keep">KEEP</string>
-    <string name="review_delete">DELETE</string>
+    <string name="review_keep">Keep</string>
+    <string name="review_delete">Delete</string>
     <string name="review_loading">Loading your library…</string>
     <string name="media_preview_unavailable">Preview unavailable</string>
     <string name="review_empty">No media to review</string>

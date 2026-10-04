@@ -34,7 +34,7 @@ fun ProgressRing(
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = if (target > 0f) progress / target else 0f,
-        animationSpec = tween(800),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "progress",
     )
 

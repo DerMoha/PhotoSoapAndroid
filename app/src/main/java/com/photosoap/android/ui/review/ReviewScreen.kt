@@ -24,7 +24,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -67,7 +68,7 @@ import com.photosoap.android.ui.review.components.DeleteBatchConfirmSheet
 import com.photosoap.android.ui.review.components.PhotoPreviewSheet
 import com.photosoap.android.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReviewScreen(
     isLimitedAccess: Boolean = false,
@@ -154,7 +155,7 @@ fun ReviewScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.review_loading),
@@ -273,12 +274,14 @@ fun ReviewScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         FilledTonalButton(
+                            shapes = ButtonDefaults.shapesFor(56.dp),
+                            contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
                             onClick = {
                                 haptics.impactMedium()
                                 viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE, state.currentPhoto?.uri))
                             },
                             enabled = !state.isDeleting,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(56.dp),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -287,19 +290,21 @@ fun ReviewScreen(
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(ButtonDefaults.iconSizeFor(56.dp)),
                             )
                             Spacer(modifier = Modifier.size(8.dp))
                             Text(stringResource(R.string.review_delete))
                         }
 
                         Button(
+                            shapes = ButtonDefaults.shapesFor(56.dp),
+                            contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
                             onClick = {
                                 haptics.impactLight()
                                 viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, state.currentPhoto?.uri))
                             },
                             enabled = !state.isDeleting,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -308,7 +313,7 @@ fun ReviewScreen(
                             Icon(
                                 imageVector = Icons.Filled.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(ButtonDefaults.iconSizeFor(56.dp)),
                             )
                             Spacer(modifier = Modifier.size(8.dp))
                             Text(stringResource(R.string.review_keep))

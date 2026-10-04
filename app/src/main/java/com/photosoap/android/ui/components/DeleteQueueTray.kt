@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.width
@@ -45,9 +46,11 @@ fun DeleteQueueTray(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(MaterialTheme.shapes.extraLarge)
             .background(
                 color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                shape = MaterialTheme.shapes.extraLarge,
             )
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,6 +83,7 @@ fun DeleteQueueTray(
                 )
             }
             Button(
+                shapes = ButtonDefaults.shapes(),
                 onClick = onViewList,
                 enabled = enabled,
                 colors = ButtonDefaults.buttonColors(

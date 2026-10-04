@@ -1,5 +1,19 @@
 package com.photosoap.android.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Collections
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -7,8 +21,6 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,13 +69,14 @@ sealed interface AppDestination {
 data class BottomNavItem(
     val route: AppDestination,
     val icon: ImageVector,
+    val inactiveIcon: ImageVector,
     @StringRes val labelRes: Int,
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(AppDestination.Review, Icons.Filled.Collections, R.string.tab_review),
-    BottomNavItem(AppDestination.Stats, Icons.Filled.BarChart, R.string.tab_stats),
-    BottomNavItem(AppDestination.Achievements, Icons.Filled.EmojiEvents, R.string.tab_achievements),
+    BottomNavItem(AppDestination.Review, Icons.Filled.Collections, Icons.Outlined.Collections, R.string.tab_review),
+    BottomNavItem(AppDestination.Stats, Icons.Filled.BarChart, Icons.Outlined.BarChart, R.string.tab_stats),
+    BottomNavItem(AppDestination.Achievements, Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents, R.string.tab_achievements),
 )
 
 @Composable
@@ -71,6 +84,8 @@ fun AppNavHost(
     navController: NavHostController = rememberNavController(),
     isLimitedAccess: Boolean = false,
 ) {
+    val transitionMotion = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val transitionFade = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -84,11 +99,16 @@ fun AppNavHost(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                Box(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 6.dp)) {
+                ShortNavigationBar(
+                    modifier = Modifier.clip(MaterialTheme.shapes.extraLarge),
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ) {
                     bottomNavItems.forEach { item ->
                         val label = stringResource(item.labelRes)
-                        NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = label) },
+                        ShortNavigationBarItem(
+                            icon = { Icon(if (currentDestination?.hasRoute(item.route::class) == true) item.icon else item.inactiveIcon, contentDescription = null) },
                             label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             selected = currentDestination?.hasRoute(item.route::class) == true,
                             onClick = {
@@ -103,6 +123,7 @@ fun AppNavHost(
                         )
                     }
                 }
+                }
             }
         },
     ) { innerPadding ->
@@ -110,6 +131,10 @@ fun AppNavHost(
             navController = navController,
             startDestination = AppDestination.Review,
             modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(transitionFade) + slideInHorizontally(transitionMotion) { it / 16 } },
+            exitTransition = { fadeOut(transitionFade) },
+            popEnterTransition = { fadeIn(transitionFade) + slideInHorizontally(transitionMotion) { -it / 16 } },
+            popExitTransition = { fadeOut(transitionFade) },
         ) {
             composable<AppDestination.Stats> {
                 StatsScreen(

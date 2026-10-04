@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
@@ -18,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.photosoap.android.R
-import com.photosoap.android.ui.components.ProgressRing
 
 @Composable
 fun CompactHeader(
@@ -41,11 +45,10 @@ fun CompactHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            ProgressRing(
-                progress = dailyChallengeProgress.toFloat().coerceAtMost(dailyChallengeTarget.toFloat()),
-                target = dailyChallengeTarget.toFloat(),
-                size = 28.dp,
-                strokeWidth = 3.dp,
+            CircularWavyProgressIndicator(
+                progress = { if (dailyChallengeTarget > 0) (dailyChallengeProgress.toFloat() / dailyChallengeTarget).coerceIn(0f, 1f) else 0f },
+                modifier = Modifier.size(36.dp),
+                waveSpeed = 0.dp,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.padding(vertical = 6.dp)) {
@@ -62,7 +65,7 @@ fun CompactHeader(
             }
         }
 
-        IconButton(onClick = onFilterClick) {
+        FilledTonalIconButton(onClick = onFilterClick) {
             Icon(
                 imageVector = Icons.Filled.FilterList,
                 contentDescription = stringResource(R.string.filter_title),
