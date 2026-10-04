@@ -42,8 +42,8 @@ android {
         applicationId = "com.photosoap"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0-beta.1"
+        versionCode = 2
+        versionName = "1.0.0-beta.2"
 
         buildConfigField(
             "String",
