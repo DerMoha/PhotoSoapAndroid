@@ -77,6 +77,7 @@ fun SwipeableCard(
     val currentOnSwiped by rememberUpdatedState(onSwiped)
     val currentOnCommit by rememberUpdatedState(onCommit)
     val currentOnThreshold by rememberUpdatedState(onThreshold)
+    var motionJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var crossedThreshold by remember { mutableStateOf(false) }
 
     LaunchedEffect(resetKey) {
@@ -115,7 +116,8 @@ fun SwipeableCard(
         swipeDirection = direction
         currentOnCommit(direction)
         val targetX = if (direction == SwipeDirection.KEEP) cardWidth * 1.45f else -cardWidth * 1.45f
-        scope.launch {
+        motionJob?.cancel()
+        motionJob = scope.launch {
             coroutineScope {
                 launch {
                     var delivered = false
@@ -142,7 +144,8 @@ fun SwipeableCard(
     }
 
     fun snapBack(initialVelocity: Float = 0f) {
-        scope.launch {
+        motionJob?.cancel()
+        motionJob = scope.launch {
             coroutineScope {
                 launch { offsetX.animateTo(0f, snapBackMotion, initialVelocity = initialVelocity) }
                 launch { offsetY.animateTo(0f, snapBackMotion) }
@@ -199,6 +202,9 @@ fun SwipeableCard(
                         var pointerId = down.id
                         var dragged = false
                         crossedThreshold = false
+                        motionJob?.cancel()
+                        var dragX = offsetX.value
+                        var dragY = offsetY.value
 
                         scope.launch {
                             offsetX.stop()
@@ -215,7 +221,8 @@ fun SwipeableCard(
                             change.consume()
                             dragged = true
                             velocityTracker.addPosition(change.uptimeMillis, change.position)
-                            val newX = offsetX.value + overSlop.x
+                            val newX = dragX + overSlop.x
+                            dragX = newX
                             scope.launch {
                                 offsetX.snapTo(newX)
                             }
@@ -235,8 +242,10 @@ fun SwipeableCard(
                             val dragAmount = change.positionChange()
                             change.consume()
                             velocityTracker.addPosition(change.uptimeMillis, change.position)
-                            val newX = offsetX.value + dragAmount.x
-                            val newY = (offsetY.value + dragAmount.y).coerceIn(-cardWidth * 0.12f, cardWidth * 0.12f)
+                            val newX = dragX + dragAmount.x
+                            dragX = newX
+                            val newY = (dragY + dragAmount.y).coerceIn(-cardWidth * 0.12f, cardWidth * 0.12f)
+                            dragY = newY
                             scope.launch {
                                 offsetX.snapTo(newX)
                                 offsetY.snapTo(newY)
@@ -251,8 +260,8 @@ fun SwipeableCard(
                         if (!dragged) return@awaitEachGesture
                         val velocity = velocityTracker.calculateVelocity().x
                         val targetDirection = when {
-                            offsetX.value > swipeThreshold || velocity > velocityThreshold -> SwipeDirection.KEEP
-                            offsetX.value < -swipeThreshold || velocity < -velocityThreshold -> SwipeDirection.DELETE
+                            dragX > swipeThreshold || velocity > velocityThreshold -> SwipeDirection.KEEP
+                            dragX < -swipeThreshold || velocity < -velocityThreshold -> SwipeDirection.DELETE
                             else -> null
                         }
 

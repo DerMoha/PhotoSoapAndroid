@@ -90,7 +90,9 @@ fun ReviewScreen(
     var cardSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val imageLoader = remember(context) { coil3.SingletonImageLoader.get(context) }
-    val upcoming = state.photos.drop(state.currentIndex + 1).take(2)
+    val upcoming = remember(state.photos, state.currentIndex) {
+        (1..2).mapNotNull { state.photos.getOrNull(state.currentIndex + it) }
+    }
     androidx.compose.runtime.DisposableEffect(upcoming.map { it.uri }, cardSize) {
         val requests = if (cardSize.width > 0 && cardSize.height > 0) upcoming.map {
             imageLoader.enqueue(com.photosoap.android.ui.components.reviewImageRequest(context, it, cardSize))
