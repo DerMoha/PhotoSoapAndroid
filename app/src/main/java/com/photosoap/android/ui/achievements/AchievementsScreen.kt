@@ -1,6 +1,9 @@
 package com.photosoap.android.ui.achievements
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -40,7 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.ui.components.AchievementCard
 import com.photosoap.android.ui.components.ProgressRing
-import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +52,7 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val largeText = LocalDensity.current.fontScale > 1.3f
     var selectedAchievement by remember { mutableStateOf<Achievement?>(null) }
 
     Scaffold(
@@ -83,30 +86,28 @@ fun AchievementsScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ProgressRing(
                         progress = state.unlockedCount.toFloat(),
                         target = state.totalCount.toFloat(),
-                        size = 80.dp,
-                        strokeWidth = 6.dp,
-                    ) {
+                        size = 48.dp,
+                        strokeWidth = 4.dp,
+                    )
+                    Column {
                         Text(
                             text = "${state.unlockedCount}/${state.totalCount}",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = stringResource(R.string.achievements_unlocked_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.achievements_unlocked_label),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
 
@@ -114,7 +115,7 @@ fun AchievementsScreen(
 
             LazyVerticalGrid(
                 modifier = Modifier.weight(1f),
-                columns = GridCells.Fixed(2),
+                columns = if (largeText) GridCells.Fixed(1) else GridCells.Adaptive(156.dp),
                 contentPadding = PaddingValues(bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -124,7 +125,7 @@ fun AchievementsScreen(
                     AchievementCard(
                         title = achievement.localizedTitle(),
                         description = achievement.localizedDescription(),
-                        emoji = achievement.iconName,
+                        icon = achievement.materialIcon(),
                         isUnlocked = achievement.id in state.unlockedIds,
                         progress = if (stats != null && achievement.isUnlocked(stats)) 1f
                             else if (stats != null) (achievement.progress(stats)).coerceIn(0f, 0.99f)
@@ -163,10 +164,13 @@ private fun AchievementDetailSheet(
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = achievement.iconName,
-                style = MaterialTheme.typography.displayLarge,
-            )
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Icon(achievement.materialIcon(), contentDescription = null, modifier = Modifier.padding(16.dp).size(48.dp))
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = achievement.localizedTitle(),
@@ -185,7 +189,7 @@ private fun AchievementDetailSheet(
                 Text(
                     text = stringResource(R.string.achievement_status_unlocked),
                     style = MaterialTheme.typography.titleMedium,
-                    color = AppColors.Keep,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

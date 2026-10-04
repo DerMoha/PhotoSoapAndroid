@@ -1,86 +1,78 @@
 package com.photosoap.android.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.photosoap.android.ui.theme.AppColors
+import com.photosoap.android.R
 
 @Composable
 fun AchievementCard(
     title: String,
     description: String,
-    emoji: String,
+    icon: ImageVector,
     isUnlocked: Boolean,
     progress: Float,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isUnlocked) 3.dp else 1.dp),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().heightIn(min = 168.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = if (isUnlocked) AppColors.AchievementContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = if (isUnlocked) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = if (isUnlocked) MaterialTheme.colorScheme.onSecondaryContainer
+                else MaterialTheme.colorScheme.onSurface,
         ),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .padding(12.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.SpaceBetween,
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
-                Text(
-                    text = emoji,
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isUnlocked)
-                        AppColors.OnAchievementContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (!isUnlocked) {
+                Icon(icon, contentDescription = null, modifier = Modifier.padding(8.dp).size(24.dp))
+            }
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(description, style = MaterialTheme.typography.bodySmall)
+            if (isUnlocked) {
+                Text(stringResource(R.string.achievement_status_unlocked), style = MaterialTheme.typography.labelMedium)
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    LinearProgressIndicator(
+                        progress = { progress.coerceIn(0f, 1f) },
+                        modifier = Modifier.weight(1f),
+                    )
                     Text(
-                        text = description,
+                        stringResource(R.string.achievement_progress_percent, (progress.coerceIn(0f, 1f) * 100).toInt()),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
-            }
-
-            if (!isUnlocked) {
-                ProgressRing(
-                    progress = progress,
-                    target = 1f,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    size = 24.dp,
-                    strokeWidth = 3.dp,
-                )
             }
         }
     }

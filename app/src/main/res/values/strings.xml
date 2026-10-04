@@ -196,4 +196,5 @@
     <string name="daily_goal_title">Daily goal</string>
     <string name="daily_goal_reviewed">%1$d of %2$d reviewed</string>
     <string name="daily_goal_deleted">%1$d of %2$d deleted</string>
+    <string name="achievement_progress_percent">%1$d%%</string>
 </resources>
