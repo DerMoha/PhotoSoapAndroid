@@ -72,8 +72,12 @@ class MainViewModel @Inject constructor(
     }
 
     fun onResume() {
-        if (_uiState.value is MainUiState.PermissionDenied) {
-            viewModelScope.launch { checkPermissionAndNavigate() }
+        if (_uiState.value is MainUiState.Main || _uiState.value is MainUiState.PermissionDenied) {
+            viewModelScope.launch {
+                val access = permissionChecker.getMediaAccess()
+                _uiState.value = if (access == MediaAccess.NONE) MainUiState.PermissionDenied
+                else MainUiState.Main(isLimitedAccess = access == MediaAccess.LIMITED)
+            }
         }
     }
 

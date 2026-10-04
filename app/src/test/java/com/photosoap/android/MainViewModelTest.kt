@@ -74,4 +74,21 @@ class MainViewModelTest {
 
         assertEquals(MainUiState.PermissionDenied, viewModel!!.uiState.value)
     }
+    @Test
+    fun `returning from settings refreshes limited full and revoked access`() = runTest(dispatcher) {
+        every { settings.hasSeenOnboarding } returns flowOf(true)
+        every { permissions.hasMediaPermissions() } returns true
+        every { permissions.getMediaAccess() } returns MediaAccess.LIMITED
+        viewModel = MainViewModel(context, settings, permissions)
+        assertEquals(MainUiState.Main(true), viewModel!!.uiState.value)
+
+        every { permissions.getMediaAccess() } returns MediaAccess.FULL
+        viewModel!!.onResume()
+        assertEquals(MainUiState.Main(false), viewModel!!.uiState.value)
+
+        every { permissions.getMediaAccess() } returns MediaAccess.NONE
+        viewModel!!.onResume()
+        assertEquals(MainUiState.PermissionDenied, viewModel!!.uiState.value)
+    }
+
 }

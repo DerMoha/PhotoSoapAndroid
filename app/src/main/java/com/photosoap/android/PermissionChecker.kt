@@ -27,7 +27,7 @@ class PermissionChecker @Inject constructor(
         val videoPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO)
         } else {
-            PackageManager.PERMISSION_GRANTED
+            imagePermission
         }
 
         val selectedMediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -42,11 +42,7 @@ class PermissionChecker @Inject constructor(
         val hasImages = imagePermission == PackageManager.PERMISSION_GRANTED
         val hasVideos = videoPermission == PackageManager.PERMISSION_GRANTED
         val hasSelected = selectedMediaPermission == PackageManager.PERMISSION_GRANTED
-        return when {
-            hasImages && hasVideos -> MediaAccess.FULL
-            hasImages || hasVideos || hasSelected -> MediaAccess.LIMITED
-            else -> MediaAccess.NONE
-        }
+        return mediaAccessForGrants(Build.VERSION.SDK_INT, hasImages, hasVideos, hasSelected)
     }
 
     fun getRequiredPermissions(): Array<String> {
@@ -76,4 +72,12 @@ enum class MediaAccess {
     NONE,
     LIMITED,
     FULL,
+}
+
+/** Before Android 13 both media kinds share READ_EXTERNAL_STORAGE. */
+internal fun mediaAccessForGrants(sdk: Int, images: Boolean, videos: Boolean, selected: Boolean): MediaAccess = when {
+    sdk < 33 -> if (images) MediaAccess.FULL else MediaAccess.NONE
+    images && videos -> MediaAccess.FULL
+    images || videos || (sdk >= 34 && selected) -> MediaAccess.LIMITED
+    else -> MediaAccess.NONE
 }
