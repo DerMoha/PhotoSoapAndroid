@@ -5,8 +5,10 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -74,6 +78,7 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val reviewScrollState = rememberScrollState()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
     val view = LocalView.current
     val haptics = remember(view, hapticsEnabled) { HapticsController(view, hapticsEnabled) }
@@ -116,17 +121,24 @@ fun ReviewScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.tab_review)) },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.settings_title),
-                        )
-                    }
-                },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CompactHeader(
+                    todayReviewCount = state.todayReviewCount,
+                    hasActiveFilter = state.filter !is com.photosoap.android.domain.model.ReviewFilter.All ||
+                        state.mediaKind != com.photosoap.android.domain.model.MediaKind.ALL,
+                    dailyChallengeProgress = state.dailyChallengeProgress,
+                    dailyChallengeTarget = state.dailyChallengeTarget,
+                    dailyChallengeType = state.dailyChallengeType,
+                    onFilterClick = { viewModel.onEvent(ReviewUiEvent.OpenFilterSheet) },
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onNavigateToSettings) {
+                    Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_title))
+                }
+            }
         },
     ) { contentPadding ->
         Column(
@@ -193,22 +205,20 @@ fun ReviewScreen(
             }
 
             else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    CompactHeader(
-                        todayReviewCount = state.todayReviewCount,
-                        hasActiveFilter = state.filter !is com.photosoap.android.domain.model.ReviewFilter.All ||
-                                state.mediaKind != com.photosoap.android.domain.model.MediaKind.ALL,
-                        dailyChallengeProgress = state.dailyChallengeProgress,
-                        dailyChallengeTarget = state.dailyChallengeTarget,
-                        dailyChallengeType = state.dailyChallengeType,
-                        onFilterClick = { viewModel.onEvent(ReviewUiEvent.OpenFilterSheet) },
-                    )
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val compactHeight = maxHeight < 400.dp
+                Column(
+                    modifier = Modifier.fillMaxSize().then(
+                        if (compactHeight) Modifier.verticalScroll(reviewScrollState) else Modifier,
+                    ),
+                ) {
+
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .then(if (compactHeight) Modifier.height(320.dp) else Modifier.weight(1f))
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         state.currentPhoto?.let { photo ->
@@ -308,6 +318,7 @@ fun ReviewScreen(
                         }
                     }
 
+                }
                 }
             }
             }

@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntOffset
@@ -144,25 +145,29 @@ fun SwipeableCard(
                         velocityTracker.addPosition(down.uptimeMillis, down.position)
 
                         val slopChange = awaitTouchSlopOrCancellation(pointerId) { change, overSlop ->
+                            // Let the review's compact-height scroll container own
+                            // vertical drags instead of stealing them for a card swipe.
+                            if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) return@awaitTouchSlopOrCancellation
                             change.consume()
                             dragged = true
                             velocityTracker.addPosition(change.uptimeMillis, change.position)
                             val newX = offsetX.value + overSlop.x
-                            val newY = (offsetY.value + overSlop.y).coerceIn(-cardWidth * 0.12f, cardWidth * 0.12f)
                             scope.launch {
                                 offsetX.snapTo(newX)
-                                offsetY.snapTo(newY)
                             }
                             updateSwipeState(newX, swipeThreshold)
                         }
 
                         if (slopChange == null) {
-                            onTap()
+                            val up = currentEvent.changes.firstOrNull { it.id == pointerId }
+                            if (up != null && up.changedToUpIgnoreConsumed() && !up.isConsumed &&
+                                (up.position - down.position).getDistance() <= viewConfiguration.touchSlop
+                            ) onTap()
                             return@awaitEachGesture
                         }
 
                         pointerId = slopChange.id
-                        horizontalDrag(pointerId) { change ->
+                        val completed = horizontalDrag(pointerId) { change ->
                             val dragAmount = change.positionChange()
                             change.consume()
                             velocityTracker.addPosition(change.uptimeMillis, change.position)
@@ -175,6 +180,10 @@ fun SwipeableCard(
                             updateSwipeState(newX, swipeThreshold)
                         }
 
+                        if (!completed) {
+                            snapBack()
+                            return@awaitEachGesture
+                        }
                         if (!dragged) return@awaitEachGesture
                         val velocity = velocityTracker.calculateVelocity().x
                         val targetDirection = when {

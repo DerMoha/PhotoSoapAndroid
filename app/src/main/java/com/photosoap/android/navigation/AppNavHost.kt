@@ -1,5 +1,6 @@
 package com.photosoap.android.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.annotation.StringRes
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -77,6 +79,9 @@ fun AppNavHost(
     }
 
     Scaffold(
+        // Each destination owns its own top app bar and status-bar insets. Do not
+        // apply the outer scaffold's top system inset a second time.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -84,7 +89,7 @@ fun AppNavHost(
                         val label = stringResource(item.labelRes)
                         NavigationBarItem(
                             icon = { Icon(item.icon, contentDescription = label) },
-                            label = { Text(label) },
+                            label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             selected = currentDestination?.hasRoute(item.route::class) == true,
                             onClick = {
                                 navController.navigate(item.route) {
