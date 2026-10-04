@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photosoap.android.ui.components.StatCard
-import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 import com.photosoap.android.R
 
@@ -114,7 +113,7 @@ fun StatsScreen(
                     StatCard(
                         title = stringResource(R.string.stats_photos_deleted),
                         value = "${state.stats?.totalDeleted ?: 0}",
-                        accentColor = AppColors.Delete,
+                        accentColor = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -126,13 +125,13 @@ fun StatsScreen(
                     StatCard(
                         title = stringResource(R.string.stats_photos_kept),
                         value = "${state.stats?.totalKept ?: 0}",
-                        accentColor = AppColors.Keep,
+                        accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
                         title = stringResource(R.string.stats_storage_freed),
                         value = FileSize.format(state.stats?.storageFreed ?: 0),
-                        accentColor = AppColors.Achievement,
+                        accentColor = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -151,7 +150,7 @@ fun StatsScreen(
                     StatCard(
                         title = stringResource(R.string.stats_reviewed_today),
                         value = "${state.stats?.todayReviewCount ?: 0}",
-                        accentColor = AppColors.Warning,
+                        accentColor = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
@@ -169,7 +168,7 @@ fun StatsScreen(
                     StatCard(
                         title = stringResource(R.string.stats_best_streak),
                         value = "${state.stats?.bestStreak ?: 0}",
-                        accentColor = AppColors.Warning,
+                        accentColor = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.weight(1f),
                     )
                     StatCard(
@@ -202,13 +201,13 @@ fun StatsScreen(
                             modifier = Modifier
                                 .weight(state.keepDeleteRatio.coerceAtLeast(0.001f))
                                 .fillMaxSize()
-                                .background(AppColors.Keep),
+                                .background(MaterialTheme.colorScheme.primary),
                         )
                         Box(
                             modifier = Modifier
                                 .weight((1f - state.keepDeleteRatio).coerceAtLeast(0.001f))
                                 .fillMaxSize()
-                                .background(AppColors.Delete),
+                                .background(MaterialTheme.colorScheme.error),
                         )
                         }
                     }
@@ -222,7 +221,7 @@ fun StatsScreen(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(AppColors.Keep),
+                                .background(MaterialTheme.colorScheme.primary),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -238,7 +237,7 @@ fun StatsScreen(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(AppColors.Delete),
+                                .background(MaterialTheme.colorScheme.error),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(

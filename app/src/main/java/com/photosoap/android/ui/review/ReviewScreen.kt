@@ -65,7 +65,6 @@ import com.photosoap.android.ui.review.components.FilterSheet
 import com.photosoap.android.ui.review.components.DeleteQueueSheet
 import com.photosoap.android.ui.review.components.DeleteBatchConfirmSheet
 import com.photosoap.android.ui.review.components.PhotoPreviewSheet
-import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -281,8 +280,8 @@ fun ReviewScreen(
                             enabled = !state.isDeleting,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = AppColors.DeleteContainer,
-                                contentColor = AppColors.OnDeleteContainer,
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
                             ),
                         ) {
                             Icon(
@@ -302,8 +301,8 @@ fun ReviewScreen(
                             enabled = !state.isDeleting,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Keep,
-                                contentColor = AppColors.OnKeep,
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
                             ),
                         ) {
                             Icon(
@@ -432,8 +431,8 @@ private fun SwipeHintBadge(
     Surface(
         modifier = modifier.padding(24.dp),
         shape = CircleShape,
-        color = if (isKeep) AppColors.KeepContainer else AppColors.DeleteContainer,
-        contentColor = if (isKeep) AppColors.OnKeepContainer else AppColors.OnDeleteContainer,
+        color = if (isKeep) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+        contentColor = if (isKeep) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer,
         tonalElevation = 6.dp,
         shadowElevation = 8.dp,
     ) {

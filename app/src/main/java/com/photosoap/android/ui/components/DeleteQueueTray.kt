@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.photosoap.android.R
-import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
 @Composable
@@ -47,7 +46,7 @@ fun DeleteQueueTray(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = AppColors.DeleteContainer,
+                color = MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             )
             .padding(12.dp),
@@ -67,7 +66,7 @@ fun DeleteQueueTray(
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = AppColors.OnDeleteContainer,
+                color = MaterialTheme.colorScheme.onErrorContainer,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -77,15 +76,15 @@ fun DeleteQueueTray(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = stringResource(R.string.undo),
-                    tint = AppColors.OnDeleteContainer,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
             Button(
                 onClick = onViewList,
                 enabled = enabled,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.OnDeleteContainer,
-                    contentColor = AppColors.DeleteContainer,
+                    containerColor = MaterialTheme.colorScheme.onErrorContainer,
+                    contentColor = MaterialTheme.colorScheme.errorContainer,
                 ),
             ) {
                 Text(

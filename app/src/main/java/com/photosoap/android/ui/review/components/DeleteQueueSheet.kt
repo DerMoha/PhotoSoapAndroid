@@ -39,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import com.photosoap.android.R
 import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.PendingDeletionItem
-import com.photosoap.android.ui.theme.AppColors
 import com.photosoap.android.util.FileSize
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +79,7 @@ fun DeleteQueueSheet(
                     onClick = onClearAll,
                     enabled = items.isNotEmpty(),
                 ) {
-                    Text(stringResource(R.string.delete_queue_clear_all), color = AppColors.Delete)
+                    Text(stringResource(R.string.delete_queue_clear_all), color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -165,8 +164,8 @@ fun DeleteQueueSheet(
                 enabled = items.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Delete,
-                    contentColor = AppColors.OnDelete,
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
                 ),
             ) {
                 Icon(Icons.Filled.Delete, contentDescription = null)
