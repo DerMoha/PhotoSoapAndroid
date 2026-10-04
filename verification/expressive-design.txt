@@ -1,0 +1,55 @@
+Material 3 Expressive design pass — 2026-10-04
+
+Design references:
+https://m3.material.io/
+https://developer.android.com/jetpack/androidx/releases/compose-material3
+https://developer.android.com/reference/kotlin/androidx/compose/material3/MaterialExpressiveTheme.composable
+
+Stack: Material 3 1.5.0-alpha29, Compose BOM 2026.09.00, Kotlin 2.2.20,
+AGP 9.1.0, Gradle 9.3.1, SDK/build tools 37.0.0. Min SDK 28, target SDK 36.
+Expressive is an intentional pre-release UI dependency for this beta.
+
+Implemented:
+- Native Expressive theme, type and shape defaults, and spring motion.
+- Compact daily-goal header, native wavy progress, shape-changing review
+  buttons, rounded ShortNavigationBar, and a floating Delete List tray.
+- Stats with a storage-freed focal card and responsive number tiles.
+- Achievements with native Material icons/shapes, wavy progress, a summary
+  that scrolls with the cards, and a fully opened scrollable detail sheet.
+- Settings grouped into native interactive list surfaces with descriptive icons.
+- Expressive onboarding, empty-state surfaces, filter headers, deletion
+  confirmation controls, preview loading, and snackbar motion.
+- Buttons grow at large font sizes; appearance pickers and detail sheets scroll.
+
+Local verification:
+- 89 debug and 89 release unit tests: zero failures, errors, or skipped tests.
+- Database migration instrumentation on API 36: one test, zero failures.
+- Debug/release lint: no errors. Dependency-update warnings remain.
+- Debug APK, signed release APK, signed release bundle, and production
+  configuration verification pass.
+- Final UI-only detail-sheet correction rebuilt both variants with lint passing.
+- APK signing verification passes; signed APK is approximately 4.8 MB.
+
+Emulator visual and interaction checks (PhotoSoap_Beta_API36):
+- Onboarding, Review, Stats, Achievements, Settings, filters, Delete List,
+  deletion confirmation, and achievement details rendered and inspected.
+- Light/dark appearance and custom accent selection verified.
+- Review Keep and Delete List actions updated the daily counter to 2,
+  preserved one queued item across app updates, and cancellation preserved it.
+- 200% fonts: Review action labels fit; Stats and Achievements use one column;
+  settings rows wrap and scroll. Screenshots captured after content loaded.
+- German achievement titles/descriptions wrap without overlapping progress;
+  filter headings and choices localize.
+- Landscape Review scroll reaches Keep/Delete actions; achievement details
+  show both title and description immediately rather than a cropped half sheet.
+- Emulator font scale and orientation restored after testing.
+
+Evidence: verification/emulator/api36-expressive-*.png
+Logs: successful local Gradle verification retained in /private/tmp/
+photosoap-expressive-validated.log and photosoap-expressive-detail.log.
+This pass does not replace the physical-device and distribution acceptance
+checks in RELEASE_CHECKLIST.md; earlier API 28/29/33/34 smoke evidence is
+historical and was not rerun for this design pass.
+
+Signed APK SHA-256:
+178fa51bff4283b9260ae93cce8296f5f41e03b48a9a88ad833885c1b40e6ce5

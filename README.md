@@ -40,7 +40,7 @@ Never commit the keystore, passwords, or the Supabase publishable key file. The 
 
 ## External beta verification
 
-The current beta version is `1.0.0-beta.1`. Use JDK 17 and SDK 36.
+The current beta version is `1.0.0-beta.1`. Use JDK 17 and SDK 37.0 (build tools 37.0.0).
 
 After configuring the upload key, run `./scripts/verify-beta.sh` for unit tests,
 lint, debug/release assembly, production configuration checks, and the Play bundle.
@@ -55,3 +55,15 @@ key. Validate opt-in/opt-out before distributing an analytics-enabled build.
 See `BETA_IMPLEMENTATION_STATUS.md` for implemented fixes, verification evidence,
 and remaining distribution gates. The signed build and core API 28/29/33/34/36
 emulator checks now pass; Play Console setup and physical-device acceptance remain.
+
+## Material 3 Expressive
+
+The UI uses Google's `MaterialExpressiveTheme`, its spring motion scheme, native
+Expressive navigation, shape-changing buttons, wavy progress indicators, and
+Material shape assets. Settings support system, light, and dark appearance,
+wallpaper colors, and four accent palettes.
+
+Expressive components currently use Material 3 `1.5.0-alpha29`; this is an
+intentional pre-release dependency for the beta design pass. The app still
+supports Android 9 and later and targets Android 16. See
+`verification/expressive-design.txt` for the verification scope.
