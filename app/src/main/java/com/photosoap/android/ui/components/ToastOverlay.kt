@@ -15,6 +15,8 @@ import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,10 +31,12 @@ fun ToastOverlay(
     modifier: Modifier = Modifier,
     emoji: String = "",
 ) {
+    val effects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val spatial = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn() + slideInVertically { it / 2 },
-        exit = fadeOut() + slideOutVertically { it / 2 },
+        enter = fadeIn(effects) + slideInVertically(spatial) { it / 2 },
+        exit = fadeOut(effects) + slideOutVertically(spatial) { it / 2 },
         modifier = modifier,
     ) {
         Snackbar(modifier = Modifier.padding(16.dp)) {
