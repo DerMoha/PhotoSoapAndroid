@@ -1,0 +1,6 @@
+Signed release tested on dedicated API 28 emulator.
+First-run onboarding and denied storage access recovery displayed correctly.
+READ_EXTERNAL_STORAGE grant restored review; nine disposable media previews loaded.
+With write access denied, confirmed deletion failed safely: original media and queue remained, with a manual-deletion notice.
+After WRITE_EXTERNAL_STORAGE grant, app confirmation deleted one disposable video and cleared its queue.
+Queue and progress survived signed-release update/restart.

@@ -1,0 +1,6 @@
+Signed release tested on dedicated API 29 emulator.
+Denied access recovery passed. Full access rendered nine disposable items.
+Keep and delete-list decisions passed; queue survived force-stop and restart.
+App and system confirmation approved: one disposable photo deleted; eight media remained.
+Stats: reviewed 2, kept 1, deleted 1; displayed 50% ratio.
+Settings toggle row contains label and description as non-focusable descendants; row owns state and action.

@@ -1,0 +1,6 @@
+2026-10-04: Review top spacing cleanup
+API 36.1 emulator, signed release.
+Removed separate title and progress card; consolidated progress, filter and settings in one toolbar with status bar inset and 48 dp icon targets. Media top moved from approximately y=539 to y=265 (1080px emulator, density 2.625), recovering about 104 dp.
+Visually checked normal and 200% system font scale. Filter sheet and settings navigation opened successfully. Restored font scale to 1.0 and left Review visible.
+assembleRelease, bundleRelease and lintRelease passed. Updated signed release APK/AAB and SHA256 manifest.
+Screenshots: api36-top-before.png, api36-top-after.png, api36-top-large-text.png.

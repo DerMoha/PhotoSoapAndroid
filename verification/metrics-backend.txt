@@ -1,0 +1,14 @@
+2026-10-04: Restored existing PhotoSoap free-tier Supabase project from paused state to ACTIVE_HEALTHY.
+Configured Android HTTPS endpoint accepted registration, daily totals, and repeated daily totals with HTTP 200.
+Database verification showed exactly one daily record: reviewed=3, kept=2, deleted=1, bytes=4096, platform=android, version=1.0.0-beta.1.
+Synthetic install, bucket, rate-limit records removed after validation; summary recalculated from retained records.
+Security advisories concern only deliberately public aggregate_metrics_summary discovery through GraphQL; no private per-install exposure finding.
+Remediation references (revocation not applied because public community totals are intended):
+https://supabase.com/docs/guides/database/database-linter?lint=0026_pg_graphql_anon_table_exposed
+https://supabase.com/docs/guides/database/database-linter?lint=0027_pg_graphql_authenticated_table_exposed
+App consent/opt-out and pending payload clearing are covered by unit tests. Real app-to-production integration and opt-out are verified below.
+Real app integration (debug binary uses the same API/repository sources): opt in through Settings, keep an item, advance only the local upload timer in the dedicated QA preferences, restart, and keep another item.
+Initial run revealed omitted default fields: backend classified activity as iOS and did not register the install. Fixed encodeMetricsPayload to serialize defaults and added two payload-contract regression tests.
+Repeated integration after the fix: database contains reviewed=2, kept=2, deleted=0, platform=android, app_version=1.0.0-beta.1, build_number=1, registered_install=true.
+Opt out through Settings: on-device DataStore no longer contains install_id, pending_metrics, last_metrics_flush, or processed_metric_deletions.
+Both real-app synthetic IDs and their records were removed; aggregate summary recalculated from retained records.

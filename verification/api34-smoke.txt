@@ -1,0 +1,6 @@
+API 34: denied access recovery passed
+API 34: keep, queue and restart persistence passed
+API 34: approved deletion and stats displayed:  |  |  |  |  |  |  |  |  |  | Overview |  | Items Reviewed | 2 |  | Items Deleted | 1 |  | Items Kept | 1 |  | Storage Freed | 52 KB | Streaks |  | Reviewed Today | 2 |  | Best Day | 2 |  | Best Streak | 2 |  | Days in a Row | 1 | Keep / Delete Ratio |  |  | Kept 50% |  | Deleted 50% |  |  |  | Statistics |  |  |  |  |  |  |  | Review |  |  |  |  |  |  | Stats |  |  |  |  |  | Achievements |  |  |  | 
+API 34: settings switch accessibility labels passed
+Selected-access system picker limited the deck to exactly one selected photo and one selected video.
+Manage opened app settings; setting access to Don’t allow and reopening with a cleared navigation task displayed the permission-recovery screen.

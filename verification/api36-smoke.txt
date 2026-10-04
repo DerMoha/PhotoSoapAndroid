@@ -1,0 +1,9 @@
+Signed release iterations: full access, denied access recovery, undo, queued deletion, canceled OS confirmation, rotation during approval, and live delete-list preference changes passed.
+Images and videos without capture dates show imported-date fallback; photo preview, video playback, statistics and achievements display correctly.
+Android audio service recorded started → paused on Home → started on resume; evidence in video-*.txt.
+English/German and light/dark review layouts inspected at 100% and 200% font scale.
+At 200% landscape, initial card collapse was fixed with a compact-height scroll layout. Vertical card-area dragging now scrolls without opening preview or making a review decision. Scrolling exposes card metadata and decision controls.
+Settings toggle rows expose a labeled action/state through their contained title/description. TalkBack service bound successfully; a complete spoken walkthrough remains pending.
+Process-kill command issued during a two-video approval; system result cleared queue once and stats matched. PID replacement was not measured, so this is not proof of all process-death boundaries.
+Final signed APK: horizontal keep swipe advances exactly one card (today 4→5); a short canceled horizontal drag keeps the same media and count 5. No preview opens on a vertical card-area scroll.
+Final 200% landscape screenshot shows filename/date/size plus remaining count and both DELETE/KEEP buttons after scrolling. Portrait restored at 100%; final signed app left running.
