@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,7 +45,7 @@ fun PermissionDeniedScreen(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -69,7 +73,7 @@ fun PermissionDeniedScreen(
             Button(onClick = {
                 context.startActivity(settingsIntent)
                 onDismiss()
-            }) {
+            }, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.onboarding_permission_open_settings))
             }
         }
