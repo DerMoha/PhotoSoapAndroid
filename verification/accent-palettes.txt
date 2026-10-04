@@ -1,0 +1,3 @@
+2026-10-04: Selectable Material accent palettes
+89 debug and 89 release tests passed. Foreground contrast >=4.5:1 for primary, secondary, tertiary and container roles across all four palettes in both appearances. Release build and lint passed; APK signature verified.
+API 36.1 emulator: opened native accent picker, selected Rose, checked appearance immediately and after force-stop/relaunch; switched theme to Light and inspected achievements. Custom accent selection atomically disables wallpaper colors.
