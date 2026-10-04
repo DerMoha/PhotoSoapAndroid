@@ -21,10 +21,17 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,7 +53,7 @@ import com.photosoap.android.ui.components.StatCard
 import com.photosoap.android.util.FileSize
 import com.photosoap.android.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun StatsScreen(
     onNavigateToSettings: () -> Unit,
@@ -61,12 +68,14 @@ fun StatsScreen(
         }
     }
 
+    val largeText = LocalDensity.current.fontScale > 1.3f
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.stats_title)) },
                 actions = {
-                    IconButton(onClick = onNavigateToSettings) {
+                    FilledTonalIconButton(onClick = onNavigateToSettings) {
                         Icon(
                             Icons.Filled.Settings,
                             contentDescription = stringResource(R.string.settings_title),
@@ -83,7 +92,7 @@ fun StatsScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                LoadingIndicator()
             }
         } else {
             Column(
@@ -94,15 +103,33 @@ fun StatsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+                ) {
+                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.Storage, contentDescription = null)
+                        Text(FileSize.format(state.stats?.storageFreed ?: 0),
+                            style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.stats_storage_freed), style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+
                 Text(
                     text = stringResource(R.string.stats_overview),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = if (largeText) 1 else 2,
                 ) {
                     StatCard(
                         title = stringResource(R.string.stats_photos_reviewed),
@@ -118,9 +145,11 @@ fun StatsScreen(
                     )
                 }
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = if (largeText) 1 else 2,
                 ) {
                     StatCard(
                         title = stringResource(R.string.stats_photos_kept),
@@ -128,12 +157,7 @@ fun StatsScreen(
                         accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
-                    StatCard(
-                        title = stringResource(R.string.stats_storage_freed),
-                        value = FileSize.format(state.stats?.storageFreed ?: 0),
-                        accentColor = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.weight(1f),
-                    )
+
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -143,9 +167,11 @@ fun StatsScreen(
                     fontWeight = FontWeight.Bold,
                 )
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = if (largeText) 1 else 2,
                 ) {
                     StatCard(
                         title = stringResource(R.string.stats_reviewed_today),
@@ -161,9 +187,11 @@ fun StatsScreen(
                     )
                 }
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = if (largeText) 1 else 2,
                 ) {
                     StatCard(
                         title = stringResource(R.string.stats_best_streak),
