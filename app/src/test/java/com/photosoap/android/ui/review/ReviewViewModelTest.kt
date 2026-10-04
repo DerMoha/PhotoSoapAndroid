@@ -405,6 +405,15 @@ class ReviewViewModelTest {
         assertEquals(listOf(2L, 3L, 9L), vm.uiState.value.photos.map { it.id })
         assertFalse(vm.uiState.value.isLoading)
         coVerify(exactly = 1) { photoRepository.markReviewed(first) }
+        val filterGate = kotlinx.coroutines.CompletableDeferred<List<String>>()
+        every { photoRepository.observeReviewedPhotoUris() } returns kotlinx.coroutines.flow.flow { emit(filterGate.await()) }
+        vm.onEvent(ReviewUiEvent.ChangeSortOrder(SortOrder.OLDEST_FIRST))
+        assertTrue(vm.uiState.value.isLoading)
+        vm.onResume()
+        assertTrue(vm.uiState.value.isLoading)
+        filterGate.complete(emptyList())
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.isLoading)
     }
 
     @Test

@@ -939,7 +939,7 @@ class ReviewViewModel @Inject constructor(
         loadPhotosJob?.cancel()
         val queryState = _uiState.value
         loadPhotosJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = !backgroundRefresh || it.currentPhoto == null, loadError = null) }
+            _uiState.update { it.copy(isLoading = !backgroundRefresh || it.isLoading || it.currentPhoto == null, loadError = null) }
 
             val sessionUris = reviewedInSession.toSet()
             val photos = try {
