@@ -78,6 +78,21 @@ class SwipeableCardTest {
         compose.onNodeWithText("Photo 0").assertIsDisplayed()
     }
 
+    @Test fun tapDuringReturnAnimationStillRestoresTheCard() {
+        show()
+        val originalX = compose.onNodeWithText("Photo 0").fetchSemanticsNode().boundsInRoot.center.x
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("card").performTouchInput {
+            swipe(center, center + Offset(width * .15f, 0f), durationMillis = 600)
+        }
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithTag("card").performTouchInput { click(center) }
+        compose.mainClock.advanceTimeBy(2000)
+        val restoredX = compose.onNodeWithText("Photo 0").fetchSemanticsNode().boundsInRoot.center.x
+        assertEquals(originalX, restoredX, 1f)
+        compose.runOnIdle { assertTrue(decisions.isEmpty()) }
+    }
+
     @Test fun thresholdCrossAndReturnDoesNotCommitOrRepeatTicks() {
         show()
         compose.onNodeWithTag("card").performTouchInput {

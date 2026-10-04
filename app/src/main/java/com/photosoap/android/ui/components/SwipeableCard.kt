@@ -231,6 +231,7 @@ fun SwipeableCard(
                         }
 
                         if (slopChange == null) {
+                            snapBack()
                             val up = currentEvent.changes.firstOrNull { it.id == pointerId }
                             if (up != null && up.changedToUpIgnoreConsumed() && !up.isConsumed &&
                                 (up.position - down.position).getDistance() <= viewConfiguration.touchSlop
