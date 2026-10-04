@@ -1,0 +1,4 @@
+2026-10-04 Material appearance verification
+87 debug and 87 release unit tests passed with zero failures, errors or skips. Release APK build and release lint passed. APK signing verified.
+API 36.1 emulator: achievement cards use Material icons and determinate progress; compact summary; detail sheet opened. Dynamic wallpaper palette inspected in light and dark. Theme selected via Settings: Light changes app while Android stays dark; Dark persists across force-stop/relaunch. At 200% font scale, achievement cards use one column and wrap text without fixed-height clipping. Restored font scale to 1.0.
+Android 12+ has wallpaper colors; older releases retain the fallback Material palette.
