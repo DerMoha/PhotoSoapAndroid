@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -124,6 +126,10 @@ fun SettingsScreen(
                             .build()
                         runCatching {
                             context.startActivity(Intent(Intent.ACTION_SENDTO, emailUri))
+                        }.onFailure {
+                            android.widget.Toast.makeText(context,
+                                context.getString(R.string.support_email_fallback, SUPPORT_EMAIL),
+                                android.widget.Toast.LENGTH_LONG).show()
                         }
                     },
                 )
@@ -190,6 +196,11 @@ private fun SettingsToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -206,7 +217,7 @@ private fun SettingsToggle(
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
