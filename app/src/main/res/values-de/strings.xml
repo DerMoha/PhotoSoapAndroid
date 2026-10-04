@@ -199,4 +199,7 @@
     <string name="accent_blue">Blau</string>
     <string name="accent_purple">Violett</string>
     <string name="accent_rose">Rosa</string>
+    <string name="review_kept_feedback">Behalten</string>
+    <string name="review_queued_feedback">Zur Löschliste hinzugefügt</string>
+    <string name="review_marked_feedback">Zum Löschen vorgemerkt</string>
 </resources>
