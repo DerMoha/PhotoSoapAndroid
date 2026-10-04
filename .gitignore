@@ -36,3 +36,6 @@ test-output/
 
 # Secrets
 secrets.properties
+
+# Private upload keys and local recovery material
+.signing/

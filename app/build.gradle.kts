@@ -1,4 +1,6 @@
 import java.util.Properties
+import java.net.URI
+import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
@@ -40,7 +42,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.0.0-beta.1"
 
         buildConfigField(
             "String",
@@ -188,8 +190,19 @@ tasks.register("verifyProductionConfiguration") {
         }
         val metricsUrl = releaseProperties.getProperty("metrics.url", "")
         val metricsKey = releaseProperties.getProperty("metrics.anonKey", "")
-        check(metricsUrl.startsWith("https://") && metricsKey.isNotBlank()) {
-            "Aggregate metrics are not configured with an HTTPS URL and publishable key."
+        if (metricsUrl.isNotBlank() || metricsKey.isNotBlank()) {
+            val endpoint = runCatching { URI(metricsUrl) }.getOrNull()
+            check(endpoint?.scheme == "https" && !endpoint.host.isNullOrBlank() && metricsKey.isNotBlank()) {
+                "Optional aggregate metrics require both an HTTPS URL and a publishable key."
+            }
+            val keyClaims = runCatching {
+                val encodedClaims = metricsKey.split('.').getOrNull(1).orEmpty()
+                String(Base64.getUrlDecoder().decode(encodedClaims), Charsets.UTF_8)
+            }.getOrDefault("")
+            check(!metricsKey.startsWith("sb_secret_") &&
+                !Regex("\"role\"\\s*:\\s*\"service_role\"").containsMatchIn(keyClaims)) {
+                "A secret Supabase key must never be included in an Android application."
+            }
         }
     }
 }
