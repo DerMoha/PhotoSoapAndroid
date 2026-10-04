@@ -14,8 +14,6 @@ import javax.inject.Inject
 
 class SupabaseApiImpl @Inject constructor() : SupabaseApi {
 
-    private val json = Json { ignoreUnknownKeys = true }
-
     override suspend fun ingestMetrics(payload: MetricsPayload): Result<Unit> {
         val metricsUrl = getMetricsUrl()
         if (metricsUrl.isBlank()) return Result.failure(IllegalStateException("Metrics URL not configured"))
@@ -38,12 +36,7 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
             }
 
             try {
-                val body = json.encodeToString(
-                    payload.copy(
-                        appVersion = BuildConfig.VERSION_NAME,
-                        buildNumber = BuildConfig.VERSION_CODE.toString(),
-                    )
-                )
+                val body = encodeMetricsPayload(payload)
                 connection.outputStream.use { it.write(body.toByteArray()) }
 
                 val responseCode = connection.responseCode
@@ -67,5 +60,16 @@ class SupabaseApiImpl @Inject constructor() : SupabaseApi {
     private fun getMetricsUrl(): String = BuildConfig.METRICS_URL
     private fun getAnonKey(): String = BuildConfig.METRICS_ANON_KEY
 }
+
+// The endpoint has different defaults (including iOS as its platform). Send
+// every contract field explicitly instead of inheriting the server's defaults.
+internal fun encodeMetricsPayload(payload: MetricsPayload): String = Json {
+    encodeDefaults = true
+}.encodeToString(
+    payload.copy(
+        appVersion = BuildConfig.VERSION_NAME,
+        buildNumber = BuildConfig.VERSION_CODE.toString(),
+    ),
+)
 
 class PermanentMetricsException(message: String) : Exception(message)
