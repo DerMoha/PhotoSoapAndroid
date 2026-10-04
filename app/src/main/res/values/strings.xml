@@ -193,4 +193,7 @@
     <string name="support_email_fallback">Email us at %1$s</string>
     <string name="deletion_in_progress">Waiting for Android to confirm deletion…</string>
     <string name="onboarding_deletion_safety">Your media stays on this device. Nothing is deleted until you confirm.</string>
+    <string name="daily_goal_title">Daily goal</string>
+    <string name="daily_goal_reviewed">%1$d of %2$d reviewed</string>
+    <string name="daily_goal_deleted">%1$d of %2$d deleted</string>
 </resources>

@@ -182,4 +182,7 @@
     <string name="support_email_fallback">Schreibe uns an %1$s</string>
     <string name="deletion_in_progress">Warte auf die Löschbestätigung von Android…</string>
     <string name="onboarding_deletion_safety">Deine Medien bleiben auf diesem Gerät. Gelöscht wird erst nach deiner Bestätigung.</string>
+    <string name="daily_goal_title">Tagesziel</string>
+    <string name="daily_goal_reviewed">%1$d von %2$d durchgesehen</string>
+    <string name="daily_goal_deleted">%1$d von %2$d gelöscht</string>
 </resources>
