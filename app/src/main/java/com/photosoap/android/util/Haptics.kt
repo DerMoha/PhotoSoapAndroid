@@ -14,6 +14,23 @@ class HapticsController(
     private val view: View,
     private val enabled: Boolean,
 ) {
+    fun swipeThreshold() {
+        if (!enabled) return
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE
+            else HapticFeedbackConstants.CLOCK_TICK
+        )
+    }
+
+    fun swipeConfirmed() {
+        if (!enabled) return
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM
+            else HapticFeedbackConstants.VIRTUAL_KEY
+        )
+    }
+
     fun impactLight() {
         if (!enabled) return
         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)

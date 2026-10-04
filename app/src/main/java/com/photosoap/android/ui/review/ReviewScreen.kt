@@ -246,6 +246,8 @@ fun ReviewScreen(
                                 resetKey = photo.uri,
                                 enabled = !state.isDeleting,
                                 controller = swipeController,
+                                onThreshold = { haptics.swipeThreshold() },
+                                onCommit = { haptics.swipeConfirmed() },
                                 nextContent = upcoming.firstOrNull()?.let { next ->
                                     { PhotoCardContent(next, imageRequest = remember(next.uri, cardSize) {
                                         if (cardSize.width > 0 && cardSize.height > 0)
@@ -255,7 +257,6 @@ fun ReviewScreen(
                                 },
                                 onSwiped = { direction ->
                                     lastDecision = photo.uri to direction
-                                    haptics.impactMedium()
                                     viewModel.onEvent(ReviewUiEvent.Swiped(direction, photo.uri))
                                 },
                                 onTap = {

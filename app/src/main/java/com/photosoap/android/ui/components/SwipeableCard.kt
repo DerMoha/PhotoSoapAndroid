@@ -92,8 +92,10 @@ fun SwipeableCard(
     fun updateSwipeState(x: Float, threshold: Float) {
         val progress = (x / threshold).coerceIn(-1f, 1f)
         val pastThreshold = x.absoluteValue >= threshold
-        if (pastThreshold && !crossedThreshold) currentOnThreshold()
-        crossedThreshold = pastThreshold
+        if (pastThreshold && !crossedThreshold) {
+            crossedThreshold = true
+            currentOnThreshold()
+        }
         onSwipeProgress(progress)
         swipeDirection = when {
             progress > 0.35f -> SwipeDirection.KEEP
@@ -196,6 +198,7 @@ fun SwipeableCard(
                         val down = awaitFirstDown(requireUnconsumed = false)
                         var pointerId = down.id
                         var dragged = false
+                        crossedThreshold = false
 
                         scope.launch {
                             offsetX.stop()
