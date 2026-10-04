@@ -8,6 +8,7 @@
     <string name="review_keep">BEHALTEN</string>
     <string name="review_delete">LÖSCHEN</string>
     <string name="review_loading">Bibliothek wird geladen…</string>
+    <string name="media_preview_unavailable">Vorschau nicht verfügbar</string>
     <string name="review_empty">Keine Medien zum Durchsehen</string>
     <string name="review_empty_description">Deine Bibliothek ist leer oder alles in dieser Ansicht wurde bereits durchgesehen.</string>
     <string name="review_all_reviewed">Alles durchgesehen!</string>
@@ -40,7 +41,9 @@
     <string name="delete_queue_list">Liste</string>
     <string name="delete_queue_clear_all">Alle entfernen</string>
     <string name="delete_queue_remove_item">Aus der Löschliste entfernen</string>
-    <string name="delete_confirm_system_message">Android wird dich um Bestätigung bitten. PhotoSoap kann Medien nicht ohne deine ausdrückliche Zustimmung löschen.</string>
+    <string name="delete_queue_empty_title">Keine Elemente in der Löschliste</string>
+    <string name="delete_queue_empty_description">Wische bei Fotos oder Videos nach links, um sie zur Löschliste hinzuzufügen.</string>
+    <string name="delete_confirm_system_message">Bestätige, um diese Elemente dauerhaft zu löschen. Je nach Android-Version kann Android zusätzlich um Zustimmung bitten.</string>
     <string name="delete_confirm_irreversible">Gelöschte Medien können möglicherweise nicht wiederhergestellt werden.</string>
 
     <string name="filter_title">Filter</string>
@@ -52,6 +55,7 @@
     <string name="filter_videos">Videos</string>
     <string name="filter_sort_newest">Neueste zuerst</string>
     <string name="filter_sort_oldest">Älteste zuerst</string>
+    <string name="filter_sort_shuffle">Zufällig</string>
     <string name="filter_all_photos">Alle Medien</string>
     <string name="filter_years">Jahre</string>
     <string name="filter_albums">Alben</string>
@@ -106,7 +110,7 @@
     <string name="settings_haptics">Haptisches Feedback</string>
     <string name="settings_haptics_desc">Vibrieren bei Wischaktionen</string>
     <string name="settings_use_delete_list">Löschliste verwenden</string>
-    <string name="settings_use_delete_list_desc">Elemente für Sammellöschung vormerken statt sofort zu löschen</string>
+    <string name="settings_use_delete_list_desc">Aktiviert: Löschliste sammeln und gesammelt bestätigen. Deaktiviert: Löschungen einzeln bestätigen.</string>
     <string name="settings_privacy">Datenschutz</string>
     <string name="settings_experience">Bedienung</string>
     <string name="settings_photo_access">Zugriff auf Medienbibliothek</string>
@@ -171,4 +175,11 @@
 
     <string name="limited_access_banner">Eingeschränkter Zugriff. Füge weitere Medien in den Einstellungen hinzu.</string>
     <string name="manage_access">Verwalten</string>
+    <string name="review_load_failed">Mediathek konnte nicht geladen werden</string>
+    <string name="review_access_required">Erlaube den Zugriff auf Fotos und Videos in den Einstellungen und versuche es erneut.</string>
+    <string name="review_load_failed_description">Deine Medien konnten nicht gelesen werden. Bitte versuche es erneut.</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="support_email_fallback">Schreibe uns an %1$s</string>
+    <string name="deletion_in_progress">Warte auf die Löschbestätigung von Android…</string>
+    <string name="onboarding_deletion_safety">Deine Medien bleiben auf diesem Gerät. Gelöscht wird erst nach deiner Bestätigung.</string>
 </resources>

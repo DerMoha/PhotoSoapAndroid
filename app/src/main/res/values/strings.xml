@@ -9,6 +9,7 @@
     <string name="review_keep">KEEP</string>
     <string name="review_delete">DELETE</string>
     <string name="review_loading">Loading your library…</string>
+    <string name="media_preview_unavailable">Preview unavailable</string>
     <string name="review_empty">No media to review</string>
     <string name="review_empty_description">Your library is empty or everything in this view has been reviewed.</string>
     <string name="review_all_reviewed">All Reviewed!</string>
@@ -41,7 +42,9 @@
     <string name="delete_queue_list">List</string>
     <string name="delete_queue_clear_all">Clear all</string>
     <string name="delete_queue_remove_item">Remove from delete list</string>
-    <string name="delete_confirm_system_message">Android will ask you to approve this deletion. PhotoSoap cannot delete media without your explicit permission.</string>
+    <string name="delete_queue_empty_title">No items in Delete List</string>
+    <string name="delete_queue_empty_description">Swipe left on photos or videos to add them to your Delete List.</string>
+    <string name="delete_confirm_system_message">Confirm to permanently delete these items. Depending on your Android version, Android may also ask for approval.</string>
     <string name="delete_confirm_irreversible">Deleted media may not be recoverable.</string>
 
     <!-- Filter -->
@@ -54,6 +57,7 @@
     <string name="filter_videos">Videos</string>
     <string name="filter_sort_newest">Newest First</string>
     <string name="filter_sort_oldest">Oldest First</string>
+    <string name="filter_sort_shuffle">Shuffle</string>
     <string name="filter_all_photos">All Media</string>
     <string name="filter_years">Years</string>
     <string name="filter_albums">Albums</string>
@@ -112,7 +116,7 @@
     <string name="settings_haptics">Haptic Feedback</string>
     <string name="settings_haptics_desc">Vibrate on swipe actions</string>
     <string name="settings_use_delete_list">Use Delete List</string>
-    <string name="settings_use_delete_list_desc">Queue items for batch deletion instead of deleting immediately</string>
+    <string name="settings_use_delete_list_desc">When enabled, collect a Delete List and confirm a batch. When disabled, confirm deletion as you go.</string>
     <string name="settings_privacy">Privacy</string>
     <string name="settings_experience">Experience</string>
     <string name="settings_photo_access">Media Library Access</string>
@@ -182,4 +186,11 @@
     <!-- Review banner -->
     <string name="limited_access_banner">Limited library access. Add more media in Settings.</string>
     <string name="manage_access">Manage</string>
+    <string name="review_load_failed">Couldn’t load your library</string>
+    <string name="review_access_required">Allow photo and video access in Settings, then try again.</string>
+    <string name="review_load_failed_description">Your media could not be read. Please try again.</string>
+    <string name="retry">Try again</string>
+    <string name="support_email_fallback">Email us at %1$s</string>
+    <string name="deletion_in_progress">Waiting for Android to confirm deletion…</string>
+    <string name="onboarding_deletion_safety">Your media stays on this device. Nothing is deleted until you confirm.</string>
 </resources>
