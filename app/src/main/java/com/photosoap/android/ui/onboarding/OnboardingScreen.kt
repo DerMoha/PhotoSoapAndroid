@@ -18,7 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -35,10 +35,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -51,15 +49,14 @@ fun OnboardingScreen(
     onGetStarted: (shareAnalytics: Boolean) -> Unit,
 ) {
     var shareAnalytics by rememberSaveable { mutableStateOf(false) }
-    val stackFeatures = LocalDensity.current.fontScale >= 1.3f
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary,
                         MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.background,
                         MaterialTheme.colorScheme.background,
                     ),
                 ),
@@ -78,29 +75,29 @@ fun OnboardingScreen(
             Surface(
                 modifier = Modifier.size(96.dp),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.18f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Filled.CameraAlt,
+                        imageVector = Icons.Filled.Collections,
                         contentDescription = null,
                         modifier = Modifier.size(58.dp),
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.onboarding_subtitle),
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.9f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(32.dp))
@@ -110,42 +107,22 @@ fun OnboardingScreen(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 tonalElevation = 2.dp,
             ) {
-                if (stackFeatures) {
-                    Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
-                        OnboardingFeature(
-                            icon = Icons.Filled.Swipe,
-                            text = stringResource(R.string.onboarding_swipe_desc),
-                            horizontal = true,
-                        )
-                        OnboardingFeature(
-                            icon = Icons.Filled.Lock,
-                            text = stringResource(R.string.onboarding_privacy_title),
-                            horizontal = true,
-                        )
-                        OnboardingFeature(
-                            icon = Icons.Filled.EmojiEvents,
-                            text = stringResource(R.string.onboarding_rewards_title),
-                            horizontal = true,
-                        )
-                    }
-                } else {
-                    Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 18.dp)) {
-                        OnboardingFeature(
-                            icon = Icons.Filled.Swipe,
-                            text = stringResource(R.string.onboarding_swipe_desc),
-                            modifier = Modifier.weight(1f),
-                        )
-                        OnboardingFeature(
-                            icon = Icons.Filled.Lock,
-                            text = stringResource(R.string.onboarding_privacy_title),
-                            modifier = Modifier.weight(1f),
-                        )
-                        OnboardingFeature(
-                            icon = Icons.Filled.EmojiEvents,
-                            text = stringResource(R.string.onboarding_rewards_title),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+                    OnboardingFeature(
+                        icon = Icons.Filled.Swipe,
+                        text = stringResource(R.string.onboarding_swipe_desc),
+                        horizontal = true,
+                    )
+                    OnboardingFeature(
+                        icon = Icons.Filled.Lock,
+                        text = stringResource(R.string.onboarding_privacy_title),
+                        horizontal = true,
+                    )
+                    OnboardingFeature(
+                        icon = Icons.Filled.EmojiEvents,
+                        text = stringResource(R.string.onboarding_rewards_title),
+                        horizontal = true,
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -183,6 +160,13 @@ fun OnboardingScreen(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.onboarding_deletion_safety),
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = { onGetStarted(shareAnalytics) },
