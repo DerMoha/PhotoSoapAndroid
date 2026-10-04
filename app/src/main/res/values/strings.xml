@@ -210,4 +210,7 @@
     <string name="accent_blue">Blue</string>
     <string name="accent_purple">Purple</string>
     <string name="accent_rose">Rose</string>
+    <string name="review_kept_feedback">Kept</string>
+    <string name="review_queued_feedback">Added to Delete List</string>
+    <string name="review_marked_feedback">Marked for deletion</string>
 </resources>

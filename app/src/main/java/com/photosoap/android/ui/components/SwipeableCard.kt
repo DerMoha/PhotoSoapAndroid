@@ -60,7 +60,7 @@ fun SwipeableCard(
     onThreshold: () -> Unit = {},
     onSwipeProgress: (Float) -> Unit = {},
     onTap: () -> Unit = {},
-    overlayContent: @Composable (SwipeDirection?) -> Unit = {},
+    overlayContent: @Composable (SwipeDirection?, Float) -> Unit = { _, _ -> },
     content: @Composable () -> Unit,
 ) {
     val swipeOutMotion = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
@@ -268,7 +268,7 @@ fun SwipeableCard(
         ) {
             Box(Modifier.fillMaxSize()) {
                 content()
-                overlayContent(swipeDirection)
+                overlayContent(swipeDirection, (offsetX.value / (cardWidth * 0.28f)).coerceIn(-1f, 1f))
             }
         }
     }

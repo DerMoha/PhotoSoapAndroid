@@ -3,6 +3,8 @@ package com.photosoap.android.ui.review
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -79,6 +81,10 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var lastDecision by remember { mutableStateOf<Pair<String, SwipeDirection>?>(null) }
+    LaunchedEffect(lastDecision) {
+        if (lastDecision != null) { kotlinx.coroutines.delay(1400); lastDecision = null }
+    }
     val swipeController = remember { com.photosoap.android.ui.components.SwipeCardController() }
     val reviewScrollState = rememberScrollState()
     var cardSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
@@ -248,24 +254,37 @@ fun ReviewScreen(
                                     }) }
                                 },
                                 onSwiped = { direction ->
+                                    lastDecision = photo.uri to direction
                                     haptics.impactMedium()
                                     viewModel.onEvent(ReviewUiEvent.Swiped(direction, photo.uri))
                                 },
                                 onTap = {
                                     viewModel.onEvent(ReviewUiEvent.TappedCard)
                                 },
-                                overlayContent = { direction ->
+                                overlayContent = { direction, progress ->
+                                    if (direction != null) {
+                                        Box(Modifier.fillMaxSize().background(
+                                            (if (direction == SwipeDirection.KEEP) MaterialTheme.colorScheme.primary
+                                             else MaterialTheme.colorScheme.error).copy(alpha = kotlin.math.abs(progress) * 0.24f)
+                                        ))
+                                    }
                                     if (direction == SwipeDirection.KEEP) {
                                         SwipeHintBadge(
                                             text = stringResource(R.string.review_keep),
                                             direction = direction,
-                                            modifier = Modifier.align(Alignment.CenterStart),
+                                            modifier = Modifier.align(Alignment.TopStart).graphicsLayer {
+                                                alpha = kotlin.math.abs(progress).coerceIn(0f, 1f)
+                                                scaleX = 0.85f + alpha * 0.15f; scaleY = scaleX
+                                            },
                                         )
                                     } else if (direction == SwipeDirection.DELETE) {
                                         SwipeHintBadge(
                                             text = stringResource(R.string.review_delete),
                                             direction = direction,
-                                            modifier = Modifier.align(Alignment.CenterEnd),
+                                            modifier = Modifier.align(Alignment.TopEnd).graphicsLayer {
+                                                alpha = kotlin.math.abs(progress).coerceIn(0f, 1f)
+                                                scaleX = 0.85f + alpha * 0.15f; scaleY = scaleX
+                                            },
                                         )
                                     }
                                 },
@@ -285,11 +304,13 @@ fun ReviewScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = pluralStringResource(
-                            R.plurals.review_remaining,
-                            state.photosRemaining,
-                            state.photosRemaining,
-                        ),
+                        text = when (lastDecision?.second) {
+                            SwipeDirection.KEEP -> stringResource(R.string.review_kept_feedback)
+                            SwipeDirection.DELETE -> stringResource(
+                                if (state.useDeleteQueue) R.string.review_queued_feedback else R.string.review_marked_feedback
+                            )
+                            null -> pluralStringResource(R.plurals.review_remaining, state.photosRemaining, state.photosRemaining)
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -478,7 +499,7 @@ private fun SwipeHintBadge(
             Icon(
                 imageVector = if (isKeep) Icons.Filled.Check else Icons.Filled.Delete,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(32.dp),
             )
             Text(
                 text = text,
