@@ -179,6 +179,9 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.room.testing)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.13.0-alpha01")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.13.0-alpha01")
 }
 
 tasks.withType<Test> {
