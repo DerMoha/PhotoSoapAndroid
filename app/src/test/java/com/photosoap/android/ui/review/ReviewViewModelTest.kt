@@ -373,6 +373,41 @@ class ReviewViewModelTest {
     }
 
     @Test
+    fun `background refresh keeps review interactive and preserves the next photo during a swipe`() = runTest(testDispatcher) {
+        var ids = listOf(1L, 2L, 3L)
+        every { contentResolver.query(any(), any(), any(), any(), any()) } answers {
+            val projection = secondArg<Array<String>>()
+            if (projection.size < 10) mockk<Cursor>(relaxed = true)
+            else {
+                val rows = ids.toList()
+                var row = -1
+                mockk<Cursor>(relaxed = true) {
+                    every { getColumnIndexOrThrow(any()) } answers { projection.indexOf(firstArg<String>()) }
+                    every { moveToNext() } answers { ++row < rows.size }
+                    every { getLong(any()) } answers { if (firstArg<Int>() == 0) rows[row] else 1000L }
+                    every { getString(any()) } answers { if (firstArg<Int>() == 2) "image/jpeg" else "photo.jpg" }
+                }
+            }
+        }
+        val vm = createViewModel()
+        val first = requireNotNull(vm.uiState.value.currentPhoto).uri
+        val next = vm.uiState.value.photos[1].uri
+        val gate = kotlinx.coroutines.CompletableDeferred<List<String>>()
+        every { photoRepository.observeReviewedPhotoUris() } returns kotlinx.coroutines.flow.flow { emit(gate.await()) }
+        ids = listOf(9L, 1L, 2L, 3L)
+        vm.onResume()
+        assertFalse(vm.uiState.value.isLoading)
+        assertEquals(first, vm.uiState.value.currentPhoto?.uri)
+        vm.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, first))
+        gate.complete(emptyList())
+        advanceUntilIdle()
+        assertEquals(next, vm.uiState.value.currentPhoto?.uri)
+        assertEquals(listOf(2L, 3L, 9L), vm.uiState.value.photos.map { it.id })
+        assertFalse(vm.uiState.value.isLoading)
+        coVerify(exactly = 1) { photoRepository.markReviewed(first) }
+    }
+
+    @Test
     fun `legacy confirmed deletion is counted once and removes only successfully deleted media`() = runTest(testDispatcher) {
         val items = listOf(
             PendingDeletionItem("one", "content://media/1", "one.jpg", 1024, 1, "image/jpeg"),

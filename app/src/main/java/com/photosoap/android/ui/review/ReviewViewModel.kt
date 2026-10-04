@@ -901,7 +901,7 @@ class ReviewViewModel @Inject constructor(
     fun onResume() {
         if (!isInitialized) return
         refreshDailyValues()
-        loadPhotos()
+        loadPhotos(backgroundRefresh = true)
         loadFilterData()
     }
 
@@ -920,12 +920,12 @@ class ReviewViewModel @Inject constructor(
         try {
             val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
                 override fun onChange(selfChange: Boolean) {
-                    loadPhotos()
+                    loadPhotos(backgroundRefresh = true)
                     loadFilterData()
                 }
 
                 override fun onChange(selfChange: Boolean, uri: Uri?) {
-                    loadPhotos()
+                    loadPhotos(backgroundRefresh = true)
                     loadFilterData()
                 }
             }
@@ -935,11 +935,11 @@ class ReviewViewModel @Inject constructor(
         } catch (_: Exception) { }
     }
 
-    private fun loadPhotos() {
+    private fun loadPhotos(backgroundRefresh: Boolean = false) {
         loadPhotosJob?.cancel()
         val queryState = _uiState.value
         loadPhotosJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, loadError = null) }
+            _uiState.update { it.copy(isLoading = !backgroundRefresh || it.currentPhoto == null, loadError = null) }
 
             val sessionUris = reviewedInSession.toSet()
             val photos = try {
@@ -959,8 +959,14 @@ class ReviewViewModel @Inject constructor(
             }
 
             _uiState.update {
+                val available = photos.filterNot { photo -> photo.uri in reviewedInSession }
+                // Keep the in-flight review deck stable; append newly discovered media after it.
+                val previousOrder = it.photos.drop(it.currentIndex).mapIndexed { index, photo -> photo.uri to index }.toMap()
+                val refreshed = if (backgroundRefresh)
+                    available.sortedBy { photo -> previousOrder[photo.uri] ?: Int.MAX_VALUE }
+                else available
                 it.copy(
-                    photos = photos.filterNot { photo -> photo.uri in reviewedInSession },
+                    photos = refreshed,
                     isLoading = false,
                     currentIndex = 0,
                     isReviewComplete = false,
