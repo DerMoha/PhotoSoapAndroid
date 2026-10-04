@@ -4,7 +4,6 @@ import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
@@ -35,7 +34,9 @@ fun quotedBuildConfigValue(value: String): String =
 
 android {
     namespace = "com.photosoap.android"
-    compileSdk = 36
+    compileSdk {
+        version = release(37) { minorApiLevel = 0 }
+    }
 
     defaultConfig {
         applicationId = "com.photosoap"
@@ -92,9 +93,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 
     buildFeatures {
         compose = true
@@ -107,6 +105,12 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
