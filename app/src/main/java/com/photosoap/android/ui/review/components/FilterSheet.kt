@@ -18,12 +18,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +39,7 @@ import com.photosoap.android.domain.model.SortOrder
 import com.photosoap.android.domain.model.AlbumInfo
 import java.time.YearMonth
 import java.time.format.TextStyle
-import java.util.Locale
+import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,8 @@ fun FilterSheet(
     onDeselectYear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val locale = LocalConfiguration.current.locales[0]
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -71,7 +73,7 @@ fun FilterSheet(
         ) {
             Text(
                 text = stringResource(R.string.filter_media_type),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -107,7 +109,7 @@ fun FilterSheet(
 
             Text(
                 text = stringResource(R.string.filter_sort_order),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -143,7 +145,7 @@ fun FilterSheet(
 
             Text(
                 text = stringResource(R.string.filter_browse),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -173,7 +175,7 @@ fun FilterSheet(
             AnimatedVisibility(visible = selectedYear != null) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onDeselectYear) {
+                        FilledTonalIconButton(onClick = onDeselectYear) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back),
@@ -181,7 +183,7 @@ fun FilterSheet(
                         }
                         Text(
                             text = selectedYear.toString(),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -207,7 +209,7 @@ fun FilterSheet(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = month.month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+                                    text = month.month.getDisplayName(TextStyle.FULL, locale),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }

@@ -12,14 +12,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
@@ -50,13 +52,13 @@ import coil3.compose.SubcomposeAsyncImage
 import com.photosoap.android.R
 import com.photosoap.android.domain.model.Photo
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PhotoPreviewSheet(
     photo: Photo,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
     var scale by remember(photo.uri) { mutableFloatStateOf(1f) }
     var offsetX by remember(photo.uri) { mutableFloatStateOf(0f) }
@@ -212,6 +214,7 @@ private fun VideoPreview(photo: Photo) {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PreviewPlaceholder(isError: Boolean) {
     Box(
@@ -236,7 +239,7 @@ private fun PreviewPlaceholder(isError: Boolean) {
                 )
             }
         } else {
-            CircularProgressIndicator(color = Color.White)
+            LoadingIndicator(color = Color.White)
         }
     }
 }

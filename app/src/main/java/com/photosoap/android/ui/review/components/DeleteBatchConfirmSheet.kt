@@ -66,6 +66,7 @@ fun DeleteBatchConfirmSheet(
         },
         confirmButton = {
             Button(
+                shapes = ButtonDefaults.shapes(),
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
