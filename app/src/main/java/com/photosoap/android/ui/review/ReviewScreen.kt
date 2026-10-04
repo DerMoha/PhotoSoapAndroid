@@ -79,6 +79,7 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val swipeController = remember { com.photosoap.android.ui.components.SwipeCardController() }
     val reviewScrollState = rememberScrollState()
     var cardSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -233,10 +234,19 @@ fun ReviewScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         state.currentPhoto?.let { photo ->
+                            androidx.compose.runtime.key(photo.uri) {
                             SwipeableCard(
                                 modifier = Modifier.fillMaxSize(),
                                 resetKey = photo.uri,
                                 enabled = !state.isDeleting,
+                                controller = swipeController,
+                                nextContent = upcoming.firstOrNull()?.let { next ->
+                                    { PhotoCardContent(next, imageRequest = remember(next.uri, cardSize) {
+                                        if (cardSize.width > 0 && cardSize.height > 0)
+                                            com.photosoap.android.ui.components.reviewImageRequest(context, next, cardSize)
+                                        else null
+                                    }) }
+                                },
                                 onSwiped = { direction ->
                                     haptics.impactMedium()
                                     viewModel.onEvent(ReviewUiEvent.Swiped(direction, photo.uri))
@@ -269,6 +279,7 @@ fun ReviewScreen(
                                     },
                                 )
                             }
+                            }
                         }
                     }
 
@@ -297,10 +308,9 @@ fun ReviewScreen(
                             shapes = ButtonDefaults.shapesFor(56.dp),
                             contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
                             onClick = {
-                                haptics.impactMedium()
-                                viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE, state.currentPhoto?.uri))
+                                swipeController.swipe(SwipeDirection.DELETE)
                             },
-                            enabled = !state.isDeleting,
+                            enabled = !state.isDeleting && !swipeController.busy,
                             modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -320,10 +330,9 @@ fun ReviewScreen(
                             shapes = ButtonDefaults.shapesFor(56.dp),
                             contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
                             onClick = {
-                                haptics.impactLight()
-                                viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, state.currentPhoto?.uri))
+                                swipeController.swipe(SwipeDirection.KEEP)
                             },
-                            enabled = !state.isDeleting,
+                            enabled = !state.isDeleting && !swipeController.busy,
                             modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
