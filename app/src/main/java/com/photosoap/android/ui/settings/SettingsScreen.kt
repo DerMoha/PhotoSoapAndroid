@@ -225,7 +225,7 @@ fun SettingsScreen(
             onDismissRequest = { showAccentPicker = false },
             title = { Text(stringResource(R.string.settings_accent_color)) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(stringResource(R.string.settings_accent_color_desc), style = MaterialTheme.typography.bodyMedium)
                     AccentColor.entries.forEach { accent ->
                         Row(
@@ -253,7 +253,7 @@ fun SettingsScreen(
             onDismissRequest = { showThemePicker = false },
             title = { Text(stringResource(R.string.settings_theme)) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     ThemeMode.entries.forEach { mode ->
                         Row(
                             modifier = Modifier.fillMaxWidth().selectable(
