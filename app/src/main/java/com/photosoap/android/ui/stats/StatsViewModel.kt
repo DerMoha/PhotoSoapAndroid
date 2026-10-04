@@ -19,6 +19,8 @@ class StatsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
+    private var persistedStats: com.photosoap.android.domain.model.UserStats? = null
+
     init {
         observeStats()
     }
@@ -30,9 +32,10 @@ class StatsViewModel @Inject constructor(
                     stats.totalKept.toFloat() / (stats.totalKept + stats.totalDeleted).toFloat()
                 } else 0.5f
 
+                persistedStats = stats
                 _uiState.update {
                     it.copy(
-                        stats = stats,
+                        stats = statsForToday(stats),
                         isLoading = false,
                         keepDeleteRatio = ratio,
                     )
@@ -40,4 +43,13 @@ class StatsViewModel @Inject constructor(
             }
         }
     }
+    fun refreshDailyValues() {
+        _uiState.update { it.copy(stats = statsForToday(persistedStats)) }
+    }
+
+    private fun statsForToday(stats: com.photosoap.android.domain.model.UserStats?): com.photosoap.android.domain.model.UserStats? {
+        val today = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return stats?.let { if (it.todayDate == today) it else it.copy(todayReviewCount = 0) }
+    }
+
 }

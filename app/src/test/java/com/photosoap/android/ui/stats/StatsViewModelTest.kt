@@ -65,6 +65,7 @@ class StatsViewModelTest {
             bestStreak = 50,
             dayStreak = 7,
             todayReviewCount = 15,
+            todayDate = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
             sessionReviewCount = 200,
         )
         every { statsRepository.observeStats() } returns flowOf(stats)
@@ -95,4 +96,16 @@ class StatsViewModelTest {
         val s = requireNotNull(vm.uiState.value.stats)
         assertEquals(12_345_678_901L, s.storageFreed)
     }
+    @Test
+    fun `yesterday review count is not displayed as today`() = runTest(testDispatcher) {
+        val yesterday = java.time.LocalDate.now().minusDays(1)
+            .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        every { statsRepository.observeStats() } returns flowOf(UserStats(todayDate = yesterday, todayReviewCount = 42, totalReviewed = 100))
+        val vm = StatsViewModel(statsRepository)
+        assertEquals(0, vm.uiState.value.stats!!.todayReviewCount)
+        assertEquals(100, vm.uiState.value.stats!!.totalReviewed)
+        vm.refreshDailyValues()
+        assertEquals(0, vm.uiState.value.stats!!.todayReviewCount)
+    }
+
 }
