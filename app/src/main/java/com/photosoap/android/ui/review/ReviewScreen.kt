@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
@@ -281,7 +282,7 @@ fun ReviewScreen(
                                 viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE, state.currentPhoto?.uri))
                             },
                             enabled = !state.isDeleting,
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -304,7 +305,7 @@ fun ReviewScreen(
                                 viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, state.currentPhoto?.uri))
                             },
                             enabled = !state.isDeleting,
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
