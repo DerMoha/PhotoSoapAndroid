@@ -656,7 +656,7 @@ class ReviewViewModel @Inject constructor(
                 }
                 val names = newlyUnlocked.mapNotNull { id ->
                     Achievement.ALL.find { it.id == id }?.let {
-                        "${it.iconName} ${localizedAchievementTitle(it)}"
+                        localizedAchievementTitle(it)
                     }
                 }
                 val message = names.joinToString("\n") +

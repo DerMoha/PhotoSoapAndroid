@@ -5,20 +5,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -34,31 +35,24 @@ fun ToastOverlay(
         exit = fadeOut() + slideOutVertically { it / 2 },
         modifier = modifier,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.TopCenter,
-        ) {
+        Snackbar(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(16.dp),
-                    )
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (emoji.isNotEmpty()) {
-                    Text(text = emoji, style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = when (emoji) {
+                            "❌", "⚠️" -> Icons.Outlined.WarningAmber
+                            "🏆", "🎉" -> Icons.Outlined.EmojiEvents
+                            "✅" -> Icons.Outlined.CheckCircle
+                            else -> Icons.Outlined.Info
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
+                Text(message)
             }
         }
     }
