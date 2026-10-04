@@ -71,4 +71,11 @@ class PhotoTest {
         )
         assertEquals("0:30", photo.formattedDuration)
     }
+    @Test
+    fun `effective date falls back to seconds-based import date`() {
+        val photo = Photo(1, "content://media/1", "import.jpg", "image/jpeg", 0, 1_700_000_000, 100, 10, 10)
+        assertEquals(1_700_000_000_000L, photo.effectiveDateMillis)
+        assertEquals(1234L, photo.copy(dateTaken = 1234).effectiveDateMillis)
+    }
+
 }

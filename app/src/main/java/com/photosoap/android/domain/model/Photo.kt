@@ -14,6 +14,9 @@ data class Photo(
     val bucketId: Long = 0,
     val bucketName: String = "",
 ) {
+    /** MediaStore DATE_ADDED is in seconds; DATE_TAKEN is in milliseconds. */
+    val effectiveDateMillis: Long get() = if (dateTaken > 0) dateTaken else dateAdded * 1000L
+
     val isVideo: Boolean get() = mimeType.startsWith("video/")
     val isImage: Boolean get() = mimeType.startsWith("image/")
 
