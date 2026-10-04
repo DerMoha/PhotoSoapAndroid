@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.photosoap.android.domain.model.AccentColor
 import com.photosoap.android.domain.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +27,7 @@ class MainViewModel @Inject constructor(
     private val permissionChecker: PermissionChecker,
 ) : ViewModel() {
 
+    val accentColor = settingsDataStore.accentColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AccentColor.TEAL)
     val themeMode = settingsDataStore.themeMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
     val dynamicColor = settingsDataStore.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 

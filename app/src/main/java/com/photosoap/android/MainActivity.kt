@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
             val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -47,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     navigationBarStyle = SystemBarStyle.auto(0xE6FFFFFF.toInt(), 0x801B1B1B.toInt()) { darkTheme },
                 )
             }
-            PhotoSoapTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+            PhotoSoapTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, accentColor = accentColor) {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
                 val navController = rememberNavController()
 

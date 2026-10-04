@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.theme
 
+import com.photosoap.android.domain.model.AccentColor
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -98,6 +99,7 @@ val DarkColorScheme = darkColorScheme(
 fun PhotoSoapTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    accentColor: AccentColor = AccentColor.TEAL,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -105,8 +107,7 @@ fun PhotoSoapTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else -> accentColorScheme(accentColor, darkTheme)
     }
 
     MaterialTheme(

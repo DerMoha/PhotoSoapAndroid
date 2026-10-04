@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.settings
 
+import com.photosoap.android.domain.model.AccentColor
 import com.photosoap.android.domain.model.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.photosoap.android.domain.repository.SettingsRepository
@@ -33,6 +34,8 @@ class SettingsViewModelTest {
         every { settingsRepository.hapticsEnabled } returns flowOf(true)
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
         every { settingsRepository.analyticsEnabled } returns flowOf(false)
+        every { settingsRepository.accentColor } returns flowOf(AccentColor.TEAL)
+        coEvery { settingsRepository.setAccentColor(any()) } returns Unit
         every { settingsRepository.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { settingsRepository.dynamicColor } returns flowOf(true)
         coEvery { settingsRepository.setThemeMode(any()) } returns Unit
@@ -106,5 +109,21 @@ class SettingsViewModelTest {
         assertFalse(vm.uiState.value.dynamicColor)
         coVerify { settingsRepository.setThemeMode(ThemeMode.DARK) }
         coVerify { settingsRepository.setDynamicColor(false) }
+    }
+    @Test
+    fun `custom accent reflects persisted palette and disables wallpaper colors`() = runTest(testDispatcher) {
+        val accent = MutableStateFlow(AccentColor.TEAL)
+        val dynamic = MutableStateFlow(true)
+        every { settingsRepository.accentColor } returns accent
+        every { settingsRepository.dynamicColor } returns dynamic
+        coEvery { settingsRepository.setAccentColor(any()) } coAnswers {
+            accent.value = firstArg()
+            dynamic.value = false
+        }
+        val vm = SettingsViewModel(settingsRepository)
+        vm.setAccentColor(AccentColor.PURPLE)
+        assertEquals(AccentColor.PURPLE, vm.uiState.value.accentColor)
+        assertFalse(vm.uiState.value.dynamicColor)
+        coVerify { settingsRepository.setAccentColor(AccentColor.PURPLE) }
     }
 }

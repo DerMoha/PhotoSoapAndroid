@@ -1,5 +1,6 @@
 package com.photosoap.android.data.local.datastore
 
+import com.photosoap.android.domain.model.AccentColor
 import com.photosoap.android.domain.model.ThemeMode
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -18,6 +19,7 @@ class SettingsDataStore(private val context: Context) {
 
     companion object {
         private val KEY_HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+        private val KEY_ACCENT_COLOR = stringPreferencesKey("accent_color")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         private val KEY_HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
@@ -35,6 +37,15 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_SEEN_ONBOARDING] ?: false }
+    val accentColor: Flow<AccentColor> = context.dataStore.data.map { preferences ->
+        AccentColor.entries.firstOrNull { it.name == preferences[KEY_ACCENT_COLOR] } ?: AccentColor.TEAL
+    }
+    suspend fun setAccentColor(accent: AccentColor) {
+        context.dataStore.edit {
+            it[KEY_ACCENT_COLOR] = accent.name
+            it[KEY_DYNAMIC_COLOR] = false
+        }
+    }
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         ThemeMode.entries.firstOrNull { it.name == preferences[KEY_THEME_MODE] } ?: ThemeMode.SYSTEM
     }

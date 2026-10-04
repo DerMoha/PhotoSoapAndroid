@@ -193,4 +193,10 @@
     <string name="settings_dynamic_color">Hintergrundfarben</string>
     <string name="settings_dynamic_color_desc">Farben deines Android-Hintergrunds verwenden</string>
     <string name="achievement_progress_percent">%1$d%%</string>
+    <string name="settings_accent_color">Akzentfarbe</string>
+    <string name="settings_accent_color_desc">Wähle eine Material-Farbpalette. Deine Auswahl ersetzt die Hintergrundfarben.</string>
+    <string name="accent_teal">Türkis</string>
+    <string name="accent_blue">Blau</string>
+    <string name="accent_purple">Violett</string>
+    <string name="accent_rose">Rosa</string>
 </resources>

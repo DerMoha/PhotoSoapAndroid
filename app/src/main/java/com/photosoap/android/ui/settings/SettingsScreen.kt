@@ -1,6 +1,11 @@
 package com.photosoap.android.ui.settings
 
 import android.os.Build
+import com.photosoap.android.domain.model.AccentColor
+import com.photosoap.android.ui.theme.accentSwatch
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 import com.photosoap.android.domain.model.ThemeMode
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
@@ -58,6 +63,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showAccentPicker by remember { mutableStateOf(false) }
     var showThemePicker by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -86,6 +92,12 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_theme),
                     subtitle = stringResource(state.themeMode.labelResource()),
                     onClick = { showThemePicker = true },
+                )
+                SettingsTextAction(
+                    text = stringResource(R.string.settings_accent_color),
+                    subtitle = stringResource(if (state.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                        R.string.settings_dynamic_color else state.accentColor.labelResource()),
+                    onClick = { showAccentPicker = true },
                 )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     SettingsToggle(
@@ -187,6 +199,34 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+    if (showAccentPicker) {
+        AlertDialog(
+            onDismissRequest = { showAccentPicker = false },
+            title = { Text(stringResource(R.string.settings_accent_color)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.settings_accent_color_desc), style = MaterialTheme.typography.bodyMedium)
+                    AccentColor.entries.forEach { accent ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().selectable(
+                                selected = !(state.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) && state.accentColor == accent,
+                                role = Role.RadioButton,
+                                onClick = { viewModel.setAccentColor(accent); showAccentPicker = false },
+                            ).padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = !(state.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) && state.accentColor == accent, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.size(24.dp).background(accentSwatch(accent), CircleShape))
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(accent.labelResource()))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAccentPicker = false }) { Text(stringResource(R.string.close)) } },
+        )
     }
     if (showThemePicker) {
         AlertDialog(
@@ -299,4 +339,11 @@ private fun ThemeMode.labelResource(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.theme_system
     ThemeMode.LIGHT -> R.string.theme_light
     ThemeMode.DARK -> R.string.theme_dark
+}
+
+private fun AccentColor.labelResource(): Int = when (this) {
+    AccentColor.TEAL -> R.string.accent_teal
+    AccentColor.BLUE -> R.string.accent_blue
+    AccentColor.PURPLE -> R.string.accent_purple
+    AccentColor.ROSE -> R.string.accent_rose
 }

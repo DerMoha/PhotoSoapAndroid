@@ -1,9 +1,12 @@
 package com.photosoap.android.domain.repository
 
+import com.photosoap.android.domain.model.AccentColor
 import com.photosoap.android.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
+    val accentColor: Flow<AccentColor>
+    suspend fun setAccentColor(accent: AccentColor)
     val themeMode: Flow<ThemeMode>
     val dynamicColor: Flow<Boolean>
     suspend fun setThemeMode(mode: ThemeMode)

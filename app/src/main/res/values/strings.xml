@@ -204,4 +204,10 @@
     <string name="settings_dynamic_color">Wallpaper colors</string>
     <string name="settings_dynamic_color_desc">Use colors from your Android wallpaper</string>
     <string name="achievement_progress_percent">%1$d%%</string>
+    <string name="settings_accent_color">Accent color</string>
+    <string name="settings_accent_color_desc">Choose a Material palette. Selecting one replaces wallpaper colors.</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_purple">Purple</string>
+    <string name="accent_rose">Rose</string>
 </resources>

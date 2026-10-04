@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.settings
 
+import com.photosoap.android.domain.model.AccentColor
 import com.photosoap.android.domain.model.ThemeMode
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
+    val accentColor: AccentColor = AccentColor.TEAL,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val hapticsEnabled: Boolean = true,
@@ -34,12 +36,14 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.hapticsEnabled,
                 settingsRepository.useDeleteQueue,
                 settingsRepository.analyticsEnabled,
-                settingsRepository.themeMode,
-                settingsRepository.dynamicColor,
-            ) { haptics, deleteQueue, analytics, themeMode, dynamicColor ->
+                combine(settingsRepository.themeMode, settingsRepository.dynamicColor, settingsRepository.accentColor) { mode, dynamic, accent ->
+                    Triple(mode, dynamic, accent)
+                },
+            ) { haptics, deleteQueue, analytics, appearance ->
                 SettingsUiState(
-                    themeMode = themeMode,
-                    dynamicColor = dynamicColor,
+                    themeMode = appearance.first,
+                    dynamicColor = appearance.second,
+                    accentColor = appearance.third,
                     hapticsEnabled = haptics,
                     useDeleteQueue = deleteQueue,
                     analyticsEnabled = analytics,
@@ -48,6 +52,10 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    fun setAccentColor(accent: AccentColor) {
+        viewModelScope.launch { settingsRepository.setAccentColor(accent) }
     }
 
     fun setThemeMode(mode: ThemeMode) {
