@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,9 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import coil3.compose.SubcomposeAsyncImage
 import com.photosoap.android.R
-import coil3.compose.AsyncImage
 import com.photosoap.android.domain.model.Photo
+import com.photosoap.android.util.DateFormatting
 import com.photosoap.android.util.FileSize
 
 @Composable
@@ -34,16 +37,24 @@ fun PhotoCardContent(
     photo: Photo,
     modifier: Modifier = Modifier,
 ) {
+    val dateMillis = photo.effectiveDateMillis
+
     Box(
         modifier = modifier
             .fillMaxSize(),
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = photo.uri,
             contentDescription = photo.displayName,
             modifier = Modifier
                 .fillMaxSize(),
             contentScale = ContentScale.Crop,
+            loading = {
+                MediaPlaceholder(photo = photo, isError = false)
+            },
+            error = {
+                MediaPlaceholder(photo = photo, isError = true)
+            },
         )
 
         Column(
@@ -80,7 +91,15 @@ fun PhotoCardContent(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (dateMillis > 0) {
+                    Text(
+                        text = DateFormatting.formatShort(dateMillis),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = FileSize.format(photo.fileSize),
                     style = MaterialTheme.typography.bodySmall,
@@ -93,7 +112,52 @@ fun PhotoCardContent(
                         style = MaterialTheme.typography.bodySmall,
                         color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f),
                     )
+                } else if (photo.width > 0 && photo.height > 0) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${photo.width}×${photo.height}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f),
+                    )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaPlaceholder(
+    photo: Photo,
+    isError: Boolean,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = if (photo.isVideo) Icons.Filled.Videocam else Icons.Filled.PhotoLibrary,
+                contentDescription = null,
+                modifier = Modifier.size(42.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (isError) {
+                Text(
+                    text = stringResource(R.string.media_preview_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
