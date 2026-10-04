@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.positionChange
@@ -164,7 +165,7 @@ fun SwipeableCard(
         onDispose { controller?.action = null; controller?.busy = false }
     }
 
-    Box(modifier = modifier.onSizeChanged { cardWidth = it.width.toFloat().coerceAtLeast(1f) }) {
+    Box(modifier = modifier.clipToBounds().onSizeChanged { cardWidth = it.width.toFloat().coerceAtLeast(1f) }) {
         if (nextContent != null) {
             val reveal = (offsetX.value.absoluteValue / cardWidth).coerceIn(0f, 1f)
             Card(
