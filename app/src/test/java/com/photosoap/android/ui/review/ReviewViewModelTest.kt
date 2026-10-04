@@ -2,7 +2,14 @@ package com.photosoap.android.ui.review
 
 import android.content.ContentResolver
 import android.content.Context
+import android.database.Cursor
+import com.photosoap.android.PermissionChecker
+import com.photosoap.android.MediaAccess
+import kotlinx.coroutines.flow.MutableStateFlow
+import android.util.Log
 import android.net.Uri
+import android.provider.MediaStore
+import android.content.ContentUris
 import androidx.lifecycle.viewModelScope
 import com.photosoap.android.domain.model.Achievement
 import com.photosoap.android.domain.model.MediaKind
@@ -47,6 +54,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewViewModelTest {
 
+    private val permissionChecker = mockk<PermissionChecker>()
     private val contentResolver = mockk<ContentResolver>(relaxed = true)
     private val context = mockk<Context>(relaxed = true)
     private val photoRepository = mockk<PhotoRepository>(relaxed = true)
@@ -61,9 +69,26 @@ class ReviewViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
         mockkStatic(Uri::class)
+        mockkStatic(MediaStore.Files::class)
+        mockkStatic(ContentUris::class)
+        every { MediaStore.Files.getContentUri(any<String>()) } returns mockk(relaxed = true)
+        every { ContentUris.withAppendedId(isNull(), any()) } answers {
+            val id = secondArg<Long>()
+            val uri = mockk<Uri>()
+            every { uri.toString() } returns "content://media/external/images/media/$id"
+            uri
+        }
         every { Uri.parse(any()) } returns mockk(relaxed = true)
         every { context.contentResolver } returns contentResolver
+        every { permissionChecker.getMediaAccess() } returns MediaAccess.FULL
+        every { settingsRepository.hapticsEnabled } returns flowOf(true)
+        val emptyCursor = mockk<Cursor>(relaxed = true)
+        every { emptyCursor.moveToFirst() } returns false
+        every { emptyCursor.moveToNext() } returns false
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns emptyCursor
         every { settingsRepository.mediaKind } returns flowOf("all")
         every { settingsRepository.sortOrder } returns flowOf("newest_first")
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
@@ -81,7 +106,10 @@ class ReviewViewModelTest {
     fun tearDown() {
         viewModels.forEach { it.viewModelScope.cancel() }
         viewModels.clear()
+        unmockkStatic(Log::class)
         unmockkStatic(Uri::class)
+        unmockkStatic(MediaStore.Files::class)
+        unmockkStatic(ContentUris::class)
         Dispatchers.resetMain()
     }
 
@@ -92,6 +120,7 @@ class ReviewViewModelTest {
         settingsRepository = settingsRepository,
         achievementRepository = achievementRepository,
         metricsRepository = metricsRepository,
+        permissionChecker = permissionChecker,
         ioDispatcher = testDispatcher,
     ).also(viewModels::add)
 
@@ -139,6 +168,15 @@ class ReviewViewModelTest {
         val vm = createViewModel()
         vm.onEvent(ReviewUiEvent.ChangeSortOrder(SortOrder.OLDEST_FIRST))
         assertEquals(SortOrder.OLDEST_FIRST, vm.uiState.value.sortOrder)
+    }
+
+    @Test
+    fun `change sort order to shuffled updates state and persists preference`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.ChangeSortOrder(SortOrder.SHUFFLED))
+
+        assertEquals(SortOrder.SHUFFLED, vm.uiState.value.sortOrder)
+        coVerify { settingsRepository.setSortOrder("SHUFFLED") }
     }
 
     @Test
@@ -253,4 +291,137 @@ class ReviewViewModelTest {
             settingsRepository.setPendingDeletionRequest("")
         }
     }
+    @Test
+    fun `delete preference changes apply without recreating the review session`() = runTest(testDispatcher) {
+        val preference = MutableStateFlow(true)
+        every { settingsRepository.useDeleteQueue } returns preference
+        val vm = createViewModel()
+        assertTrue(vm.uiState.value.useDeleteQueue)
+        preference.value = false
+        assertFalse(vm.uiState.value.useDeleteQueue)
+        preference.value = true
+        assertTrue(vm.uiState.value.useDeleteQueue)
+    }
+
+    @Test
+    fun `restricted access never converts invisible queued media into confirmed deletions`() = runTest(testDispatcher) {
+        every { permissionChecker.getMediaAccess() } returns MediaAccess.LIMITED
+        val item = PendingDeletionItem("item-1", "content://media/external/images/media/1", "photo.jpg", 2048, 1, "image/jpeg")
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(listOf(item)))
+        every { settingsRepository.pendingDeletionRequest } returns flowOf(
+            """{"requestId":"request-1","itemIds":["item-1"]}""",
+        )
+        val vm = createViewModel()
+        assertEquals(listOf(item), vm.uiState.value.pendingDeletions)
+        coVerify(exactly = 0) { statsRepository.updateStatsForDeletionOnce(any(), any()) }
+        coVerify(exactly = 0) { metricsRepository.trackBatchDeletionOnce(any(), any(), any()) }
+    }
+
+    @Test
+    fun `null media provider cursor is a recoverable error instead of an empty library`() = runTest(testDispatcher) {
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns null
+        val vm = createViewModel()
+        assertEquals(ReviewLoadError.UNAVAILABLE, vm.uiState.value.loadError)
+        val emptyCursor = mockk<Cursor>(relaxed = true)
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns emptyCursor
+        vm.onEvent(ReviewUiEvent.RetryLoad)
+        assertNull(vm.uiState.value.loadError)
+        assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `permission failure presents an access recovery state`() = runTest(testDispatcher) {
+        every { contentResolver.query(any(), any(), any(), any(), any()) } throws SecurityException("revoked")
+        val vm = createViewModel()
+        assertEquals(ReviewLoadError.ACCESS_DENIED, vm.uiState.value.loadError)
+    }
+
+    @Test
+    fun `late deletion results without an active request cannot alter statistics`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onDeletionRequestResult(true)
+        vm.onDeletionRequestResult(true)
+        coVerify(exactly = 0) { statsRepository.updateStatsForDeletionOnce(any(), any()) }
+        coVerify(exactly = 0) { metricsRepository.trackBatchDeletionOnce(any(), any(), any()) }
+    }
+
+    @Test
+    fun `duplicate gestures for an old photo cannot advance or count the next photo`() = runTest(testDispatcher) {
+        every { contentResolver.query(any(), any(), any(), any(), any()) } answers {
+            val projection = secondArg<Array<String>>()
+            if (projection.size < 10) mockk<Cursor>(relaxed = true)
+            else {
+                var row = -1
+                mockk<Cursor>(relaxed = true) {
+                    every { getColumnIndexOrThrow(any()) } answers { projection.indexOf(firstArg<String>()) }
+                    every { moveToNext() } answers { ++row < 2 }
+                    every { getLong(any()) } answers { if (firstArg<Int>() == 0) (row + 1).toLong() else 1000L }
+                    every { getString(any()) } answers { if (firstArg<Int>() == 2) "image/jpeg" else "photo.jpg" }
+                }
+            }
+        }
+        val vm = createViewModel()
+        assertNull(vm.uiState.value.loadError)
+        val first = requireNotNull(vm.uiState.value.currentPhoto).uri
+        vm.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, first))
+        assertEquals(1, vm.uiState.value.currentIndex)
+        vm.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE, first))
+        assertEquals(1, vm.uiState.value.currentIndex)
+        assertTrue(vm.uiState.value.pendingDeletions.isEmpty())
+        coVerify(exactly = 1) { photoRepository.markReviewed(first) }
+        coVerify(exactly = 1) { metricsRepository.trackKept() }
+    }
+
+    @Test
+    fun `legacy confirmed deletion is counted once and removes only successfully deleted media`() = runTest(testDispatcher) {
+        val items = listOf(
+            PendingDeletionItem("one", "content://media/1", "one.jpg", 1024, 1, "image/jpeg"),
+            PendingDeletionItem("two", "content://media/2", "two.jpg", 2048, 1, "image/jpeg"),
+        )
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(items))
+        val present = mockk<Cursor>(relaxed = true)
+        every { present.moveToFirst() } returns true
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns present
+        every { contentResolver.delete(any(), any(), any()) } returnsMany listOf(1, 0)
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.ConfirmDelete)
+        assertEquals(listOf(items[1]), vm.uiState.value.pendingDeletions)
+        assertFalse(vm.uiState.value.isDeleting)
+        vm.onDeletionRequestResult(true)
+        coVerify(exactly = 1) { statsRepository.updateStatsForDeletionOnce(any(), match { it.totalDeleted == 1 && it.storageFreed == 1024L }) }
+        coVerify(exactly = 1) { metricsRepository.trackBatchDeletionOnce(any(), 1, 1024) }
+    }
+
+    @Test
+    fun `confirmed receipt recovers even when selected-media access hides the deleted rows`() = runTest(testDispatcher) {
+        every { permissionChecker.getMediaAccess() } returns MediaAccess.LIMITED
+        val item = PendingDeletionItem("one", "content://media/1", "one.jpg", 2048, 1, "image/jpeg")
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(listOf(item)))
+        val receipt = """{"requestId":"confirmed-1","itemIds":["one"],"items":${Json.encodeToString(listOf(item))},"confirmedItemIds":["one"]}"""
+        every { settingsRepository.pendingDeletionRequest } returns flowOf(receipt)
+        val vm = createViewModel()
+        assertTrue(vm.uiState.value.pendingDeletions.isEmpty())
+        coVerify(exactly = 1) { statsRepository.updateStatsForDeletionOnce("confirmed-1", match { it.totalDeleted == 1 && it.storageFreed == 2048L }) }
+        coVerify(exactly = 1) { metricsRepository.trackBatchDeletionOnce("confirmed-1", 1, 2048) }
+    }
+
+    @Test
+    fun `restored system result uses its original request snapshot under limited access`() = runTest(testDispatcher) {
+        every { permissionChecker.getMediaAccess() } returns MediaAccess.LIMITED
+        val item = PendingDeletionItem("one", "content://media/1", "one.jpg", 4096, 1, "image/jpeg")
+        every { settingsRepository.pendingDeletions } returns flowOf(Json.encodeToString(listOf(item)))
+        val journal = """{"requestId":"restored-1","itemIds":["one"],"items":${Json.encodeToString(listOf(item))}}"""
+        every { settingsRepository.pendingDeletionRequest } returns flowOf(journal)
+        val vm = createViewModel()
+        vm.onDeletionRequestResult(true, "unrelated-request")
+        assertEquals(listOf(item), vm.uiState.value.pendingDeletions)
+        coVerify(exactly = 0) { statsRepository.updateStatsForDeletionOnce(any(), any()) }
+        vm.onDeletionRequestResult(true, "restored-1")
+        vm.onDeletionRequestResult(true, "restored-1")
+        assertTrue(vm.uiState.value.pendingDeletions.isEmpty())
+        assertFalse(vm.uiState.value.isDeleting)
+        coVerify(exactly = 1) { statsRepository.updateStatsForDeletionOnce("restored-1", match { it.totalDeleted == 1 && it.storageFreed == 4096L }) }
+        coVerify(exactly = 1) { metricsRepository.trackBatchDeletionOnce("restored-1", 1, 4096) }
+    }
+
 }

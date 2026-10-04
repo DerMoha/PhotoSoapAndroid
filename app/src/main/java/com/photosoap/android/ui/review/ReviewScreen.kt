@@ -31,6 +31,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import com.photosoap.android.util.HapticsController
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,22 +74,41 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val view = LocalView.current
+    val haptics = remember(view, hapticsEnabled) { HapticsController(view, hapticsEnabled) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
+    LaunchedEffect(viewModel) {
+        while (true) {
+            kotlinx.coroutines.delay(60_000)
+            viewModel.refreshDailyValues()
+        }
+    }
+    var launchedDeletionRequestId by rememberSaveable { mutableStateOf<String?>(null) }
     val deletionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        viewModel.onDeletionRequestResult(result.resultCode == android.app.Activity.RESULT_OK)
+        val requestId = launchedDeletionRequestId
+        launchedDeletionRequestId = null
+        viewModel.onDeletionRequestResult(result.resultCode == android.app.Activity.RESULT_OK, requestId)
     }
 
     LaunchedEffect(state.pendingDeleteIntentSender) {
-        state.pendingDeleteIntentSender?.let { intentSender ->
-            deletionLauncher.launch(
-                IntentSenderRequest.Builder(intentSender).build()
-            )
+        viewModel.consumeDeletionIntentSender()?.let { intentSender ->
+            launchedDeletionRequestId = viewModel.currentDeletionRequestId()
+            try {
+                deletionLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            } catch (_: Exception) {
+                launchedDeletionRequestId = null
+                viewModel.onDeletionLaunchFailed()
+            }
         }
     }
 
     LaunchedEffect(state.toastMessage) {
         if (state.toastMessage != null) {
+            if (state.toastEmoji == "❌" || state.toastEmoji == "⚠️") haptics.notificationError()
+            else haptics.notificationSuccess()
             kotlinx.coroutines.delay(3000)
             viewModel.onEvent(ReviewUiEvent.DismissToast)
         }
@@ -129,6 +156,22 @@ fun ReviewScreen(
                 }
             }
 
+            state.loadError != null -> {
+                EmptyState(
+                    title = stringResource(R.string.review_load_failed),
+                    subtitle = stringResource(if (state.loadError == ReviewLoadError.ACCESS_DENIED)
+                        R.string.review_access_required else R.string.review_load_failed_description),
+                    action = {
+                        TextButton(onClick = { viewModel.onEvent(ReviewUiEvent.RetryLoad) }) {
+                            Text(stringResource(R.string.retry))
+                        }
+                        if (state.loadError == ReviewLoadError.ACCESS_DENIED) {
+                            TextButton(onClick = onManageAccess) { Text(stringResource(R.string.settings_photo_access)) }
+                        }
+                    },
+                )
+            }
+
             state.isReviewComplete -> {
                 ReviewCompleteContent(
                     pendingDeletionCount = state.pendingDeletions.size,
@@ -141,6 +184,11 @@ fun ReviewScreen(
                 EmptyState(
                     title = stringResource(R.string.review_empty),
                     subtitle = stringResource(R.string.review_empty_description),
+                    action = {
+                        TextButton(onClick = { viewModel.onEvent(ReviewUiEvent.OpenFilterSheet) }) {
+                            Text(stringResource(R.string.filter_browse))
+                        }
+                    },
                 )
             }
 
@@ -167,9 +215,10 @@ fun ReviewScreen(
                             SwipeableCard(
                                 modifier = Modifier.fillMaxSize(),
                                 resetKey = photo.uri,
-                                enabled = true,
+                                enabled = !state.isDeleting,
                                 onSwiped = { direction ->
-                                    viewModel.onEvent(ReviewUiEvent.Swiped(direction))
+                                    haptics.impactMedium()
+                                    viewModel.onEvent(ReviewUiEvent.Swiped(direction, photo.uri))
                                 },
                                 onTap = {
                                     viewModel.onEvent(ReviewUiEvent.TappedCard)
@@ -217,7 +266,11 @@ fun ReviewScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         FilledTonalButton(
-                            onClick = { viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE)) },
+                            onClick = {
+                                haptics.impactMedium()
+                                viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.DELETE, state.currentPhoto?.uri))
+                            },
+                            enabled = !state.isDeleting,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = AppColors.DeleteContainer,
@@ -234,7 +287,11 @@ fun ReviewScreen(
                         }
 
                         Button(
-                            onClick = { viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP)) },
+                            onClick = {
+                                haptics.impactLight()
+                                viewModel.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP, state.currentPhoto?.uri))
+                            },
+                            enabled = !state.isDeleting,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppColors.Keep,
@@ -262,11 +319,24 @@ fun ReviewScreen(
                 modifier = Modifier.align(Alignment.TopCenter),
             )
         }
+            if (state.isDeleting) {
+                Text(
+                    text = stringResource(R.string.deletion_in_progress),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             if (state.hasPendingDeletions) {
                 DeleteQueueTray(
+                    enabled = !state.isDeleting,
                     itemCount = state.pendingDeletions.size,
                     totalFileSize = state.totalDeletionFileSize,
-                    onUndo = { viewModel.onEvent(ReviewUiEvent.UndoLastDeletion) },
+                    onUndo = {
+                        if (!state.isDeleting) {
+                            haptics.selection()
+                            viewModel.onEvent(ReviewUiEvent.UndoLastDeletion)
+                        }
+                    },
                     onViewList = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
                 )
             }
@@ -303,7 +373,7 @@ fun ReviewScreen(
 
     if (state.showDeleteConfirmSheet) {
         DeleteBatchConfirmSheet(
-            itemCount = state.pendingDeletions.size,
+            itemCount = minOf(state.pendingDeletions.size, 1000),
             onConfirm = { viewModel.onEvent(ReviewUiEvent.ConfirmDelete) },
             onCancel = { viewModel.onEvent(ReviewUiEvent.CancelDeleteConfirm) },
         )

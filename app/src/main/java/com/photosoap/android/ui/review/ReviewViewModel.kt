@@ -3,7 +3,6 @@ package com.photosoap.android.ui.review
 import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
-import android.database.Cursor
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -30,6 +29,8 @@ import com.photosoap.android.domain.repository.AchievementRepository
 import com.photosoap.android.domain.repository.MetricsRepository
 import com.photosoap.android.di.IoDispatcher
 import com.photosoap.android.R
+import com.photosoap.android.PermissionChecker
+import com.photosoap.android.MediaAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -60,11 +61,13 @@ class ReviewViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val achievementRepository: AchievementRepository,
     private val metricsRepository: MetricsRepository,
+    private val permissionChecker: PermissionChecker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
+    val hapticsEnabled = settingsRepository.hapticsEnabled
 
     private val statsMutex = Mutex()
     private val reviewedInSession = mutableSetOf<String>()
@@ -73,11 +76,21 @@ class ReviewViewModel @Inject constructor(
     private var mediaObserver: ContentObserver? = null
     private var loadPhotosJob: Job? = null
     private var activeDeletionRequestId: String? = null
+    private var activeDeletionItems: List<PendingDeletionItem> = emptyList()
+    private val legacyDeletedItems = mutableListOf<PendingDeletionItem>()
+    private var monthLoadJob: Job? = null
+    private var isInitialized = false
+    private var queuePersistenceJob: Job? = null
+    private var restoredDeletionRequest: DeletionRequestJournal? = null
+    private var deferredDeletionResult: Pair<Boolean, String?>? = null
 
     @Serializable
     private data class DeletionRequestJournal(
         val requestId: String,
         val itemIds: List<String>,
+        val items: List<PendingDeletionItem> = emptyList(),
+        val confirmedItemIds: List<String> = emptyList(),
+        val legacyRetry: Boolean = false,
     )
 
     init {
@@ -85,8 +98,18 @@ class ReviewViewModel @Inject constructor(
         registerContentObserver()
         viewModelScope.launch {
             loadSettings()
+            launch {
+                settingsRepository.useDeleteQueue.collect { enabled ->
+                    _uiState.update { it.copy(useDeleteQueue = enabled) }
+                }
+            }
             resetSessionStats()
             initializeDailyChallenge()
+            isInitialized = true
+            deferredDeletionResult?.let { (success, requestId) ->
+                deferredDeletionResult = null
+                onDeletionRequestResult(success, requestId)
+            }
             loadPhotos()
             loadFilterData()
         }
@@ -95,12 +118,20 @@ class ReviewViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         loadPhotosJob?.cancel()
+        monthLoadJob?.cancel()
         mediaObserver?.let { context.contentResolver.unregisterContentObserver(it) }
     }
 
     fun onEvent(event: ReviewUiEvent) {
+        if (_uiState.value.isDeleting && event in listOf(
+                ReviewUiEvent.UndoLastDeletion, ReviewUiEvent.ClearQueue,
+                ReviewUiEvent.StartOver, ReviewUiEvent.ConfirmDelete,
+                ReviewUiEvent.OpenDeleteQueue, ReviewUiEvent.RequestDeleteConfirmation,
+            )) return
+        if (_uiState.value.isDeleting && event is ReviewUiEvent.RemoveFromQueue) return
         when (event) {
-            is ReviewUiEvent.Swiped -> handleSwipe(event.direction)
+            ReviewUiEvent.RetryLoad -> onResume()
+            is ReviewUiEvent.Swiped -> handleSwipe(event.direction, event.photoUri)
             ReviewUiEvent.TappedCard -> _uiState.update { it.copy(showPhotoPreview = true, previewPhoto = it.currentPhoto) }
             ReviewUiEvent.UndoLastDeletion -> undoLastDeletion()
             ReviewUiEvent.OpenDeleteQueue -> _uiState.update { it.copy(showDeleteQueueSheet = true) }
@@ -127,8 +158,12 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private fun handleSwipe(direction: SwipeDirection) {
-        val photo = _uiState.value.currentPhoto ?: return
+    private fun handleSwipe(direction: SwipeDirection, expectedUri: String?) {
+        val state = _uiState.value
+        if (state.isLoading || state.isDeleting || state.loadError != null) return
+        val photo = state.currentPhoto ?: return
+        if (expectedUri != null && photo.uri != expectedUri) return
+        if (!reviewedInSession.add(photo.uri)) return
 
         when (direction) {
             SwipeDirection.KEEP -> {
@@ -140,29 +175,23 @@ class ReviewViewModel @Inject constructor(
                 reviewInSession(photo.uri)
                 advanceStats()
                 addToDeletionQueue(photo)
-                if (!_uiState.value.useDeleteQueue) {
-                    viewModelScope.launch { executeDeletion() }
-                }
+
             }
         }
 
         advanceToNextPhoto()
+        if (direction == SwipeDirection.DELETE && !_uiState.value.useDeleteQueue) {
+            // Older Android versions may delete directly once access has been granted.
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+                _uiState.update { it.copy(showDeleteConfirmSheet = true) }
+            } else viewModelScope.launch { executeDeletion() }
+        }
     }
 
     private fun advanceToNextPhoto() {
-        viewModelScope.launch {
-            val state = _uiState.value
+        _uiState.update { state ->
             val nextIndex = state.currentIndex + 1
-            if (nextIndex >= state.photos.size) {
-                _uiState.update {
-                    it.copy(
-                        currentIndex = nextIndex,
-                        isReviewComplete = true,
-                    )
-                }
-            } else {
-                _uiState.update { it.copy(currentIndex = nextIndex) }
-            }
+            state.copy(currentIndex = nextIndex, isReviewComplete = nextIndex >= state.photos.size)
         }
     }
 
@@ -310,82 +339,63 @@ class ReviewViewModel @Inject constructor(
     }
 
     private suspend fun executeDeletion() {
-        val items = _uiState.value.pendingDeletions
+        if (_uiState.value.isDeleting) return
+        // Keep requests comfortably below Android's batch URI limit.
+        val items = _uiState.value.pendingDeletions.take(1000)
         if (items.isEmpty()) return
-
-        val uris = items.map(::canonicalMediaUri)
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            try {
-                val deleteRequest = android.provider.MediaStore.createDeleteRequest(
-                    context.contentResolver, uris
-                )
-                beginDeletionRequest(items)
-                _uiState.update {
-                    it.copy(
-                        pendingDeleteIntentSender = deleteRequest.intentSender,
-                        showDeleteConfirmSheet = false,
-                    )
+        _uiState.update { it.copy(isDeleting = true, showDeleteConfirmSheet = false) }
+        activeDeletionItems = items
+        legacyDeletedItems.clear()
+        try {
+            queuePersistenceJob?.join()
+            val requestId = beginDeletionRequest(items)
+            when {
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R -> {
+                    val request = MediaStore.createDeleteRequest(context.contentResolver, items.map(::canonicalMediaUri))
+                    _uiState.update { it.copy(pendingDeleteIntentSender = request.intentSender) }
                 }
-            } catch (e: Exception) {
-                Log.e("ReviewViewModel", "Could not create Android media deletion request", e)
-                _uiState.update {
-                    it.copy(
-                        toastMessage = context.getString(R.string.deletion_failed),
-                        toastEmoji = "❌",
-                        showDeleteConfirmSheet = false,
-                    )
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q -> {
+                    executeLegacyDeletion(items, requestId)
                 }
+                else -> executeAndroid9Deletion(items, requestId)
             }
-        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            val requestId = beginDeletionRequest(items)
-            executeLegacyDeletion(items, requestId)
-        } else {
-            val requestId = beginDeletionRequest(items)
-            executeAndroid9Deletion(items, requestId)
+        } catch (cancellation: CancellationException) {
+            throw cancellation // Preserve the journal for recovery after process termination.
+        } catch (error: Exception) {
+            Log.e("ReviewViewModel", "Media deletion failed", error)
+            endFailedDeletion(R.string.deletion_failed)
         }
     }
 
     @RequiresApi(android.os.Build.VERSION_CODES.Q)
     private suspend fun executeLegacyDeletion(items: List<PendingDeletionItem>, requestId: String) {
-        val deletedItems = mutableListOf<PendingDeletionItem>()
         for (item in items) {
+            if (legacyDeletedItems.any { it.id == item.id }) continue
             try {
                 val deleted = withContext(ioDispatcher) {
                     context.contentResolver.delete(canonicalMediaUri(item), null, null) > 0
                 }
-                if (deleted) deletedItems += item
+                if (deleted) legacyDeletedItems += item
             } catch (recoverable: android.app.RecoverableSecurityException) {
-                if (deletedItems.isNotEmpty()) completeConfirmedDeletions(deletedItems, requestId)
-                beginDeletionRequest(_uiState.value.pendingDeletions)
+                settingsRepository.setPendingDeletionRequest(json.encodeToString(DeletionRequestJournal(
+                    requestId, items.map { it.id }, items, legacyRetry = true,
+                )))
                 _uiState.update {
                     it.copy(
                         pendingDeleteIntentSender = recoverable.userAction.actionIntent.intentSender,
                         pendingLegacyDeleteRetry = true,
-                        showDeleteConfirmSheet = false,
                     )
                 }
                 return
             } catch (_: SecurityException) {
-                // Keep this item in the queue and continue; successfully deleted items
-                // are still accounted for exactly below.
+                // Preserve inaccessible items in the queue.
             } catch (_: IllegalArgumentException) {
-                // The media item disappeared between queueing and deletion.
+                // Preserve unavailable items rather than claiming deletion.
             }
         }
-
-        if (deletedItems.isNotEmpty()) {
-            completeConfirmedDeletions(deletedItems, requestId)
-        } else {
-            clearDeletionRequest()
-            _uiState.update {
-                it.copy(
-                    toastMessage = context.getString(R.string.deletion_manual_required),
-                    toastEmoji = "⚠️",
-                    showDeleteConfirmSheet = false,
-                )
-            }
-        }
+        if (legacyDeletedItems.isNotEmpty()) {
+            completeConfirmedDeletions(legacyDeletedItems.toList(), requestId)
+        } else endFailedDeletion(R.string.deletion_manual_required)
     }
 
     private suspend fun executeAndroid9Deletion(items: List<PendingDeletionItem>, requestId: String) {
@@ -393,64 +403,90 @@ class ReviewViewModel @Inject constructor(
             items.filter { item ->
                 try {
                     context.contentResolver.delete(canonicalMediaUri(item), null, null) > 0
-                } catch (_: SecurityException) {
-                    false
-                } catch (_: IllegalArgumentException) {
-                    false
-                }
+                } catch (_: SecurityException) { false }
+                catch (_: IllegalArgumentException) { false }
             }
         }
-        if (deletedItems.isNotEmpty()) {
-            completeConfirmedDeletions(deletedItems, requestId)
-        } else {
-            clearDeletionRequest()
-            _uiState.update {
-                it.copy(
-                    toastMessage = context.getString(R.string.deletion_manual_required),
-                    toastEmoji = "⚠️",
-                    showDeleteConfirmSheet = false,
-                )
-            }
-        }
+        if (deletedItems.isNotEmpty()) completeConfirmedDeletions(deletedItems, requestId)
+        else endFailedDeletion(R.string.deletion_manual_required)
     }
 
-    fun onDeletionRequestResult(success: Boolean) {
+    /** Consume before launching so recomposition/rotation cannot launch the same sender twice. */
+    fun currentDeletionRequestId(): String? = activeDeletionRequestId
+
+    fun consumeDeletionIntentSender(): android.content.IntentSender? {
+        val sender = _uiState.value.pendingDeleteIntentSender ?: return null
+        _uiState.update { it.copy(pendingDeleteIntentSender = null) }
+        return sender
+    }
+
+    fun onDeletionLaunchFailed() {
+        viewModelScope.launch { endFailedDeletion(R.string.deletion_failed) }
+    }
+
+    fun onDeletionRequestResult(success: Boolean, requestId: String? = null) {
+        if (!isInitialized) {
+            deferredDeletionResult = success to requestId
+            return
+        }
         viewModelScope.launch {
-            if (_uiState.value.pendingLegacyDeleteRetry) {
-                _uiState.update {
-                    it.copy(
-                        pendingDeleteIntentSender = null,
-                        pendingLegacyDeleteRetry = false,
-                    )
+            if (requestId != null && requestId != activeDeletionRequestId) {
+                // ActivityResultRegistry restores results after process recreation. Match their
+                // saved request identity, never apply a late result to a newer batch.
+                val restored = restoredDeletionRequest
+                if (activeDeletionRequestId != null || restored?.requestId != requestId) return@launch
+                restoredDeletionRequest = null
+                if (!success || restored.confirmedItemIds.isNotEmpty()) return@launch
+                activeDeletionItems = restored.items.ifEmpty {
+                    _uiState.value.pendingDeletions.filter { it.id in restored.itemIds }
                 }
-                if (success) executeDeletion() else finishDeletion(false)
-            } else {
-                finishDeletion(success)
+                if (activeDeletionItems.isEmpty()) return@launch
+                if (restored.legacyRetry) {
+                    activeDeletionItems = _uiState.value.pendingDeletions.filter { it.id in restored.itemIds }
+                    if (activeDeletionItems.isEmpty()) return@launch
+                    beginDeletionRequest(activeDeletionItems)
+                } else activeDeletionRequestId = requestId
+                _uiState.update { it.copy(isDeleting = true, pendingLegacyDeleteRetry = restored.legacyRetry) }
             }
+            if (!_uiState.value.isDeleting || activeDeletionRequestId == null) return@launch
+            if (_uiState.value.pendingLegacyDeleteRetry) {
+                _uiState.update { it.copy(pendingDeleteIntentSender = null, pendingLegacyDeleteRetry = false) }
+                if (success) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        try {
+                            executeLegacyDeletion(activeDeletionItems, requireNotNull(activeDeletionRequestId))
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (error: Exception) {
+                            Log.e("ReviewViewModel", "Legacy deletion retry failed", error)
+                            endFailedDeletion(R.string.deletion_failed)
+                        }
+                    }
+                } else if (legacyDeletedItems.isNotEmpty()) {
+                    completeConfirmedDeletions(legacyDeletedItems.toList(), requireNotNull(activeDeletionRequestId))
+                } else endFailedDeletion(R.string.deletion_cancelled)
+            } else finishDeletion(success)
         }
     }
 
-    fun onDeletionComplete(success: Boolean) {
-        viewModelScope.launch { finishDeletion(success) }
-    }
+    fun onDeletionComplete(success: Boolean) = onDeletionRequestResult(success)
 
     private suspend fun finishDeletion(success: Boolean) {
-        val items = _uiState.value.pendingDeletions
+        val requestId = activeDeletionRequestId ?: return
         if (success) {
-            completeConfirmedDeletions(
-                items,
-                activeDeletionRequestId ?: UUID.randomUUID().toString(),
-            )
-        } else {
-            clearDeletionRequest()
-            _uiState.update {
-                it.copy(
-                    pendingDeleteIntentSender = null,
-                    pendingLegacyDeleteRetry = false,
-                    toastMessage = context.getString(R.string.deletion_cancelled),
-                    toastEmoji = "↩️",
-                )
-            }
+            // MediaStore delivers RESULT_OK after the requested deletion finishes.
+            // Use the frozen request, including selected-media grants whose rows are now invisible.
+            completeConfirmedDeletions(activeDeletionItems, requestId)
+        } else endFailedDeletion(R.string.deletion_cancelled)
+    }
+
+    private suspend fun endFailedDeletion(message: Int) {
+        clearDeletionRequest()
+        activeDeletionItems = emptyList()
+        legacyDeletedItems.clear()
+        _uiState.update {
+            it.copy(isDeleting = false, pendingDeleteIntentSender = null, pendingLegacyDeleteRetry = false,
+                showDeleteConfirmSheet = false, toastMessage = context.getString(message), toastEmoji = "↩️")
         }
     }
 
@@ -460,13 +496,20 @@ class ReviewViewModel @Inject constructor(
     ) {
         if (items.isEmpty()) return
         val deletedIds = items.mapTo(mutableSetOf()) { it.id }
+        // Save the confirmed receipt before updating counters or clearing the queue.
+        settingsRepository.setPendingDeletionRequest(json.encodeToString(DeletionRequestJournal(
+            requestId, activeDeletionItems.map { it.id }, activeDeletionItems, items.map { it.id },
+        )))
         val remaining = _uiState.value.pendingDeletions.filterNot { it.id in deletedIds }
         recordConfirmedDeletions(requestId, items)
         metricsRepository.trackBatchDeletionOnce(requestId, items.size, items.sumOf { it.fileSize })
         settingsRepository.setPendingDeletions(json.encodeToString(remaining))
         clearDeletionRequest()
+        activeDeletionItems = emptyList()
+        legacyDeletedItems.clear()
         _uiState.update {
             it.copy(
+                isDeleting = false,
                 pendingDeletions = remaining,
                 pendingDeleteIntentSender = null,
                 pendingLegacyDeleteRetry = false,
@@ -506,7 +549,11 @@ class ReviewViewModel @Inject constructor(
 
     private fun persistPendingDeletions() {
         val serialized = json.encodeToString(_uiState.value.pendingDeletions)
-        viewModelScope.launch { settingsRepository.setPendingDeletions(serialized) }
+        val previous = queuePersistenceJob
+        queuePersistenceJob = viewModelScope.launch {
+            previous?.join()
+            settingsRepository.setPendingDeletions(serialized)
+        }
     }
 
     private suspend fun recordConfirmedDeletions(
@@ -535,7 +582,7 @@ class ReviewViewModel @Inject constructor(
 
     private suspend fun beginDeletionRequest(items: List<PendingDeletionItem>): String {
         val requestId = UUID.randomUUID().toString()
-        val journal = DeletionRequestJournal(requestId, items.map { it.id })
+        val journal = DeletionRequestJournal(requestId, items.map { it.id }, items)
         settingsRepository.setPendingDeletionRequest(json.encodeToString(journal))
         activeDeletionRequestId = requestId
         return requestId
@@ -684,54 +731,60 @@ class ReviewViewModel @Inject constructor(
                 .takeIf(String::isNotBlank)
                 ?.let { json.decodeFromString<DeletionRequestJournal>(it) }
         }.getOrNull()
-        val pendingDeletions = withContext(ioDispatcher) {
-            storedPendingDeletions.filter(::isMediaStillAvailable)
+        restoredDeletionRequest = deletionRequest
+        val missingItems = withContext(ioDispatcher) {
+            storedPendingDeletions.filter { mediaAvailability(it) == MediaAvailability.MISSING }
         }
-        val prunedItems = storedPendingDeletions.filterNot { stored ->
-            pendingDeletions.any { it.id == stored.id }
+        val recoveredDeletions = if (deletionRequest == null) emptyList() else {
+            val snapshot = deletionRequest.items.ifEmpty { storedPendingDeletions }
+            if (deletionRequest.confirmedItemIds.isNotEmpty()) {
+                snapshot.filter { it.id in deletionRequest.confirmedItemIds }
+            } else missingItems.filter { it.id in deletionRequest.itemIds }
         }
+        val removedIds = (missingItems + recoveredDeletions).mapTo(mutableSetOf()) { it.id }
+        val pendingDeletions = storedPendingDeletions.filterNot { it.id in removedIds }
 
         _uiState.update {
             it.copy(
-                mediaKind = runCatching { MediaKind.valueOf(kind) }.getOrDefault(MediaKind.ALL),
-                sortOrder = runCatching { SortOrder.valueOf(order) }.getOrDefault(SortOrder.NEWEST_FIRST),
+                mediaKind = runCatching { MediaKind.valueOf(kind.uppercase()) }.getOrDefault(MediaKind.ALL),
+                sortOrder = runCatching { SortOrder.valueOf(order.uppercase()) }.getOrDefault(SortOrder.NEWEST_FIRST),
                 useDeleteQueue = useQueue,
                 pendingDeletions = pendingDeletions,
             )
         }
-        if (prunedItems.isNotEmpty()) {
-            settingsRepository.setPendingDeletions(json.encodeToString(pendingDeletions))
-        }
-
+        // Counters and metrics must be committed before removing their only historical queue data.
         if (deletionRequest != null) {
             activeDeletionRequestId = deletionRequest.requestId
-            val recoveredDeletions = prunedItems.filter { it.id in deletionRequest.itemIds }
             if (recoveredDeletions.isNotEmpty()) {
                 recordConfirmedDeletions(deletionRequest.requestId, recoveredDeletions)
                 metricsRepository.trackBatchDeletionOnce(
-                    deletionRequest.requestId,
-                    recoveredDeletions.size,
+                    deletionRequest.requestId, recoveredDeletions.size,
                     recoveredDeletions.sumOf { it.fileSize },
                 )
             }
-            clearDeletionRequest()
         }
+        if (removedIds.isNotEmpty()) {
+            settingsRepository.setPendingDeletions(json.encodeToString(pendingDeletions))
+        }
+        if (deletionRequest != null) clearDeletionRequest()
     }
 
-    private fun isMediaStillAvailable(item: PendingDeletionItem): Boolean = try {
-        context.contentResolver.query(
-            item.uri.toUri(),
-            arrayOf(MediaStore.Files.FileColumns._ID),
-            null,
-            null,
-            null,
-        )?.use { it.moveToFirst() } == true
+    private enum class MediaAvailability { PRESENT, MISSING, UNKNOWN }
+
+    private fun mediaAvailability(item: PendingDeletionItem): MediaAvailability = try {
+        val cursor = context.contentResolver.query(
+            item.uri.toUri(), arrayOf(MediaStore.Files.FileColumns._ID), null, null, null,
+        )
+        if (cursor == null) MediaAvailability.UNKNOWN
+        else cursor.use {
+            if (it.moveToFirst()) MediaAvailability.PRESENT
+            else if (permissionChecker.getMediaAccess() == MediaAccess.FULL) MediaAvailability.MISSING
+            else MediaAvailability.UNKNOWN
+        }
     } catch (_: SecurityException) {
-        // Permission can be temporarily unavailable while the activity is restoring.
-        // Preserve the user's queue until MediaStore can give a definitive answer.
-        true
+        MediaAvailability.UNKNOWN
     } catch (_: IllegalArgumentException) {
-        false
+        MediaAvailability.UNKNOWN
     }
 
     /**
@@ -781,41 +834,34 @@ class ReviewViewModel @Inject constructor(
 
     private fun selectYear(year: Int) {
         _uiState.update { it.copy(selectedYear = year, months = emptyList()) }
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                loadMonthsForYear(year)
-            }
+        monthLoadJob?.cancel()
+        monthLoadJob = viewModelScope.launch {
+            try {
+                val months = withContext(ioDispatcher) { mediaMonths().filter { it.year == year } }
+                if (_uiState.value.selectedYear == year) _uiState.update { it.copy(months = months) }
+            } catch (cancellation: CancellationException) { throw cancellation }
+            catch (_: Exception) { _uiState.update { it.copy(months = emptyList()) } }
         }
     }
 
     private fun deselectYear() {
+        monthLoadJob?.cancel()
         _uiState.update { it.copy(selectedYear = null, months = emptyList()) }
     }
 
-    private fun loadMonthsForYear(year: Int) {
-        val uri = MediaStore.Files.getContentUri("external")
-        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN)
+    private fun mediaMonths(): List<YearMonth> {
+        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN, MediaStore.Files.FileColumns.DATE_ADDED)
         val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
             " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
-
-        val calendar = java.util.Calendar.getInstance()
-        val yearMonths = mutableSetOf<YearMonth>()
-
-        context.contentResolver.query(
-            uri, projection, selection, null,
-            "${MediaStore.Files.FileColumns.DATE_TAKEN} DESC"
-        )?.use { cursor ->
-            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_TAKEN)
+        val months = mutableSetOf<YearMonth>()
+        context.contentResolver.query(MediaStore.Files.getContentUri("external"), projection, selection, null, null)?.use { cursor ->
             while (cursor.moveToNext()) {
-                val dateTaken = cursor.getLong(dateCol)
-                calendar.timeInMillis = dateTaken
-                val yr = calendar.get(java.util.Calendar.YEAR)
-                if (yr != year) continue
-                val month = calendar.get(java.util.Calendar.MONTH) + 1
-                yearMonths.add(YearMonth.of(yr, month))
+                val taken = cursor.getLong(0)
+                val date = if (taken > 0) taken else cursor.getLong(1) * 1000L
+                if (date > 0) months += YearMonth.from(java.time.Instant.ofEpochMilli(date).atZone(java.time.ZoneId.systemDefault()))
             }
         }
-        _uiState.update { it.copy(months = yearMonths.toList().sortedByDescending { m -> m.year * 12 + m.monthValue }) }
+        return months.sortedDescending()
     }
 
     private fun loadAlbums() {
@@ -848,28 +894,27 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun loadYears() {
-        val uri = MediaStore.Files.getContentUri("external")
-        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN)
-        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
-            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
-        val years = mutableSetOf<Int>()
-
-        context.contentResolver.query(
-            uri, projection, selection, null,
-            "${MediaStore.Files.FileColumns.DATE_TAKEN} DESC"
-        )?.use { cursor ->
-            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_TAKEN)
-            while (cursor.moveToNext()) {
-                val dateTaken = cursor.getLong(dateCol)
-                val calendar = java.util.Calendar.getInstance().apply { timeInMillis = dateTaken }
-                val year = calendar.get(java.util.Calendar.YEAR)
-                if (years.add(year)) {
-                    if (years.size >= 50) break
-                }
-            }
-        }
-        _uiState.update { it.copy(years = years.toList().sortedDescending()) }
+        val years = mediaMonths().map { it.year }.distinct().sortedDescending()
+        _uiState.update { it.copy(years = years) }
     }
+
+    fun onResume() {
+        if (!isInitialized) return
+        refreshDailyValues()
+        loadPhotos()
+        loadFilterData()
+    }
+
+    fun refreshDailyValues() {
+        viewModelScope.launch {
+            initializeDailyChallenge()
+            val stats = statsRepository.getStats()
+            _uiState.update { it.copy(todayReviewCount = dailyReviewCount(stats)) }
+        }
+    }
+
+    private fun dailyReviewCount(stats: UserStats?): Int =
+        if (stats?.todayDate == todayStartMillis()) stats.todayReviewCount else 0
 
     private fun registerContentObserver() {
         try {
@@ -894,22 +939,28 @@ class ReviewViewModel @Inject constructor(
         loadPhotosJob?.cancel()
         val queryState = _uiState.value
         loadPhotosJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, loadError = null) }
 
+            val sessionUris = reviewedInSession.toSet()
             val photos = try {
                 withContext(ioDispatcher) {
                     val reviewedUris = photoRepository.observeReviewedPhotoUris().first().toHashSet()
-                    queryPhotos(queryState).filterNot { it.uri in reviewedUris }
+                    queryPhotos(queryState).filterNot { it.uri in reviewedUris || it.uri in sessionUris }
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
-            } catch (_: Exception) {
-                emptyList()
+            } catch (_: SecurityException) {
+                _uiState.update { it.copy(isLoading = false, loadError = ReviewLoadError.ACCESS_DENIED) }
+                return@launch
+            } catch (error: Exception) {
+                runCatching { Log.e("ReviewViewModel", "Could not load media", error) }
+                _uiState.update { it.copy(isLoading = false, loadError = ReviewLoadError.UNAVAILABLE) }
+                return@launch
             }
 
             _uiState.update {
                 it.copy(
-                    photos = photos,
+                    photos = photos.filterNot { photo -> photo.uri in reviewedInSession },
                     isLoading = false,
                     currentIndex = 0,
                     isReviewComplete = false,
@@ -944,52 +995,12 @@ class ReviewViewModel @Inject constructor(
                 MediaKind.ALL -> {}
             }
 
-            when (val filter = state.filter) {
-                is ReviewFilter.All -> {}
-                is ReviewFilter.Year -> {
-                    val calendar = java.util.Calendar.getInstance()
-                    calendar.set(java.util.Calendar.YEAR, filter.year)
-                    calendar.set(java.util.Calendar.DAY_OF_YEAR, 1)
-                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    calendar.set(java.util.Calendar.MINUTE, 0)
-                    calendar.set(java.util.Calendar.SECOND, 0)
-                    calendar.set(java.util.Calendar.MILLISECOND, 0)
-                    val yearStart = calendar.timeInMillis
-                    calendar.add(java.util.Calendar.YEAR, 1)
-                    val yearEnd = calendar.timeInMillis
-                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} >= $yearStart")
-                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} < $yearEnd")
-                }
-                is ReviewFilter.Month -> {
-                    val calendar = java.util.Calendar.getInstance()
-                    calendar.set(java.util.Calendar.YEAR, filter.year)
-                    calendar.set(java.util.Calendar.MONTH, filter.month - 1)
-                    calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
-                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    calendar.set(java.util.Calendar.MINUTE, 0)
-                    calendar.set(java.util.Calendar.SECOND, 0)
-                    calendar.set(java.util.Calendar.MILLISECOND, 0)
-                    val monthStart = calendar.timeInMillis
-                    calendar.add(java.util.Calendar.MONTH, 1)
-                    val monthEnd = calendar.timeInMillis
-                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} >= $monthStart")
-                    append(" AND ${MediaStore.Files.FileColumns.DATE_TAKEN} < $monthEnd")
-                }
-                is ReviewFilter.Album -> {
-                    append(" AND ${MediaStore.Files.FileColumns.BUCKET_ID} = ${filter.albumId}")
-                }
-            }
-        }
-
-        val sortOrder = when (state.sortOrder) {
-            SortOrder.NEWEST_FIRST -> "${MediaStore.Files.FileColumns.DATE_TAKEN} DESC"
-            SortOrder.OLDEST_FIRST -> "${MediaStore.Files.FileColumns.DATE_TAKEN} ASC"
         }
 
         val photos = mutableListOf<Photo>()
-        context.contentResolver.query(
-            uri, projection, selection, null, sortOrder
-        )?.use { cursor ->
+        val cursor = context.contentResolver.query(uri, projection, selection, null, null)
+            ?: throw IllegalStateException("Media provider returned no cursor")
+        cursor.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
             val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
@@ -1032,7 +1043,22 @@ class ReviewViewModel @Inject constructor(
             }
         }
 
-        return photos
+        val zone = java.time.ZoneId.systemDefault()
+        val filtered = photos.filter { photo ->
+            when (val filter = state.filter) {
+                ReviewFilter.All -> true
+                is ReviewFilter.Album -> photo.bucketId == filter.albumId
+                is ReviewFilter.Year -> photo.effectiveDateMillis > 0 &&
+                    java.time.Instant.ofEpochMilli(photo.effectiveDateMillis).atZone(zone).year == filter.year
+                is ReviewFilter.Month -> photo.effectiveDateMillis > 0 &&
+                    YearMonth.from(java.time.Instant.ofEpochMilli(photo.effectiveDateMillis).atZone(zone)) == YearMonth.of(filter.year, filter.month)
+            }
+        }
+        return when (state.sortOrder) {
+            SortOrder.NEWEST_FIRST -> filtered.sortedByDescending { it.effectiveDateMillis }
+            SortOrder.OLDEST_FIRST -> filtered.sortedBy { it.effectiveDateMillis }
+            SortOrder.SHUFFLED -> filtered.shuffled()
+        }
     }
 
     private fun observeStats() {
@@ -1041,7 +1067,7 @@ class ReviewViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         stats = stats,
-                        todayReviewCount = stats?.todayReviewCount ?: 0,
+                        todayReviewCount = dailyReviewCount(stats),
                     )
                 }
             }

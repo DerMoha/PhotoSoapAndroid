@@ -16,6 +16,8 @@ data class ReviewUiState(
     val currentIndex: Int = 0,
     val isLoading: Boolean = true,
     val isReviewComplete: Boolean = false,
+    val loadError: ReviewLoadError? = null,
+    val isDeleting: Boolean = false,
     val mediaKind: MediaKind = MediaKind.ALL,
     val sortOrder: SortOrder = SortOrder.NEWEST_FIRST,
     val filter: ReviewFilter = ReviewFilter.All,
@@ -54,8 +56,11 @@ data class ReviewUiState(
         get() = pendingDeletions.isNotEmpty()
 }
 
+enum class ReviewLoadError { ACCESS_DENIED, UNAVAILABLE }
+
 sealed interface ReviewUiEvent {
-    data class Swiped(val direction: SwipeDirection) : ReviewUiEvent
+    data object RetryLoad : ReviewUiEvent
+    data class Swiped(val direction: SwipeDirection, val photoUri: String? = null) : ReviewUiEvent
     data object TappedCard : ReviewUiEvent
     data object UndoLastDeletion : ReviewUiEvent
     data object OpenDeleteQueue : ReviewUiEvent

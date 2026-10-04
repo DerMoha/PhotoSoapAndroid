@@ -41,6 +41,7 @@ fun DeleteQueueTray(
     onUndo: () -> Unit,
     onViewList: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = modifier
@@ -72,7 +73,7 @@ fun DeleteQueueTray(
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onUndo) {
+            IconButton(onClick = onUndo, enabled = enabled) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = stringResource(R.string.undo),
@@ -81,6 +82,7 @@ fun DeleteQueueTray(
             }
             Button(
                 onClick = onViewList,
+                enabled = enabled,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.OnDeleteContainer,
                     contentColor = AppColors.DeleteContainer,
