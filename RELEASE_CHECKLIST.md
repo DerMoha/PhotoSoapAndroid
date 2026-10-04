@@ -3,7 +3,7 @@
 ## Required before Play submission
 
 - [ ] Choose the final application ID. It is currently `com.photosoap` and cannot be changed after publishing without creating a new Play listing.
-- [x] Beta candidate uses version code 1 / `1.0.0-beta.1`; increase the version code for subsequent Play uploads.
+- [x] Beta candidate uses version code 2 / `1.0.0-beta.2`; increase the version code for subsequent Play uploads.
 - [x] Configure the new local upload key and pass `verifyProductionConfiguration`.
 - [ ] Copy the key and credentials to secure off-device backup storage.
 - [x] Run `./scripts/verify-beta.sh` with JDK 17.

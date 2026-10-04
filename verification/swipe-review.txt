@@ -1,0 +1,60 @@
+PhotoSoap swipe responsiveness verification — 2026-10-04
+
+Candidate: versionCode 2 / 1.0.0-beta.2
+Signed APK: PhotoSoap-1.0.0-beta.2.apk
+SHA-256: db35d103b3edbe43c7794689994cb6790b639c6e6e13d414e4785a9596b42753
+Signature: apksigner verification passed, APK v2, one signer.
+
+Changes
+- Prefetch the next two images using the actual card dimensions and matching Scale.FILL.
+- AsyncImage replaces subcomposition on the review path.
+- Reveal a prepared next card under the drag; advance when the outgoing card clears the viewport.
+- Material motion springs preserve release velocity and return cancelled gestures.
+- Keep/Delete buttons use the same animation and ignore duplicate requests during handoff.
+- Progressive theme-color tint and large native check/trash badges follow the moving card.
+- Feedback distinguishes Kept, Added to Delete List, and Marked for deletion.
+- Threshold feedback occurs once per gesture; confirmation occurs at release/button commit.
+- Platform haptics honor the app toggle and system settings, with guarded older-API fallbacks.
+- Background MediaStore/resume refresh preserves the active deck and appends new media.
+
+Checks
+PHOTOSOAP_RUN_DEVICE_TESTS=1 ./scripts/verify-beta.sh — passed.
+90 debug unit tests, 90 release unit tests; no failures.
+Debug/release lint passed; no errors. Existing dependency update warnings remain.
+Signed release APK and AAB built; production configuration verification passed.
+API 36 emulator: nine instrumentation tests passed (seven gesture/controller tests,
+one 12MP image cache test, one database migration test).
+Gesture coverage: short cancellation, threshold crossing and returning, pointer cancellation, interrupted return followed by a tap,
+committed swipe, disabled actions, duplicate button requests, next-card promotion, hidden next-card semantics.
+ViewModel regression test swipes while a background refresh is suspended and verifies
+exactly one review and a stable current/next ordering after newly added media is loaded. It also verifies that an explicit filter/sort reload
+remains blocked when interrupted by a background refresh.
+
+Image cache measurements (API 36 emulator; synthetic 4032x3024 JPEG; 984x1400 request)
+First run: preload 107 ms; matching display request <1 ms, MEMORY_CACHE.
+Final run: preload 119 ms; matching display request <1 ms, MEMORY_CACHE.
+Both requests share the same decoded image instance. These are cache/decode measurements,
+not end-to-end latency guarantees for every phone, file format, or library.
+
+Manual emulator review
+Debug: cancelled swipe, Keep gesture, Delete gesture/button, under-card continuity,
+colored badges, light/dark appearance, and one decision with system animator scale 0.
+Signed release: installed versionCode 2, preserved existing data/settings, Keep button,
+12MP preloaded handoff, Delete gesture, accurate queue feedback, Stats/Achievements navigation, dark mode selected in Settings, and landscape vertical
+scroll without changing the review count.
+Adding a 12MP MediaStore fixture preserved the current photo until the next decision.
+Screenshots: api36-swipe-delete-progress.png (debug), api36-swipe-kept-feedback.png and
+api36-swipe-queued-feedback.png and api36-swipe-release-dark.png (signed release), under verification/emulator.
+Video: verification/emulator/api36-swipe-review.mp4 (debug; gesture and button handoffs).
+
+Limits
+The emulator cannot validate how the haptic motor feels. Physical-device feedback and
+representative real camera/video libraries remain part of external beta testing.
+The wider release/distribution gates in RELEASE_CHECKLIST.md still apply.
+
+Research
+https://developer.android.com/develop/ui/views/haptics/haptics-principles
+https://developer.android.com/reference/android/view/HapticFeedbackConstants
+https://developer.android.com/develop/ui/compose/touch-input/user-interactions/swipe-to-dismiss
+https://coil-kt.github.io/coil/compose/
+https://github.com/coil-kt/coil/discussions/2710

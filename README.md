@@ -40,7 +40,7 @@ Never commit the keystore, passwords, or the Supabase publishable key file. The 
 
 ## External beta verification
 
-The current beta version is `1.0.0-beta.1`. Use JDK 17 and SDK 37.0 (build tools 37.0.0).
+The current beta version is `1.0.0-beta.2`. Use JDK 17 and SDK 37.0 (build tools 37.0.0).
 
 After configuring the upload key, run `./scripts/verify-beta.sh` for unit tests,
 lint, debug/release assembly, production configuration checks, and the Play bundle.
@@ -67,3 +67,5 @@ Expressive components currently use Material 3 `1.5.0-alpha29`; this is an
 intentional pre-release dependency for the beta design pass. The app still
 supports Android 9 and later and targets Android 16. See
 `verification/expressive-design.txt` for the verification scope.
+
+The swipe responsiveness changes, image-cache measurements, and emulator checks are recorded in [verification/swipe-review.txt](verification/swipe-review.txt).
