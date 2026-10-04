@@ -1,5 +1,6 @@
 package com.photosoap.android.ui.settings
 
+import com.photosoap.android.domain.model.ThemeMode
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.photosoap.android.domain.repository.SettingsRepository
@@ -12,6 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val dynamicColor: Boolean = true,
     val hapticsEnabled: Boolean = true,
     val useDeleteQueue: Boolean = true,
     val analyticsEnabled: Boolean = false,
@@ -31,8 +34,12 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.hapticsEnabled,
                 settingsRepository.useDeleteQueue,
                 settingsRepository.analyticsEnabled,
-            ) { haptics, deleteQueue, analytics ->
+                settingsRepository.themeMode,
+                settingsRepository.dynamicColor,
+            ) { haptics, deleteQueue, analytics, themeMode, dynamicColor ->
                 SettingsUiState(
+                    themeMode = themeMode,
+                    dynamicColor = dynamicColor,
                     hapticsEnabled = haptics,
                     useDeleteQueue = deleteQueue,
                     analyticsEnabled = analytics,
@@ -41,6 +48,14 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settingsRepository.setThemeMode(mode) }
+    }
+
+    fun toggleDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setDynamicColor(enabled) }
     }
 
     fun toggleHaptics(enabled: Boolean) {

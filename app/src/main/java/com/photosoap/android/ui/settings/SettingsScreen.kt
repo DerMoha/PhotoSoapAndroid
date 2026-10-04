@@ -1,5 +1,13 @@
 package com.photosoap.android.ui.settings
 
+import android.os.Build
+import com.photosoap.android.domain.model.ThemeMode
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -50,6 +58,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showThemePicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -72,6 +81,22 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
+            SettingsGroup(stringResource(R.string.settings_appearance)) {
+                SettingsTextAction(
+                    text = stringResource(R.string.settings_theme),
+                    subtitle = stringResource(state.themeMode.labelResource()),
+                    onClick = { showThemePicker = true },
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_dynamic_color),
+                        subtitle = stringResource(R.string.settings_dynamic_color_desc),
+                        checked = state.dynamicColor,
+                        onCheckedChange = viewModel::toggleDynamicColor,
+                    )
+                }
+            }
+
             SettingsGroup(stringResource(R.string.settings_experience)) {
                 SettingsToggle(
                     title = stringResource(R.string.settings_haptics),
@@ -163,6 +188,32 @@ fun SettingsScreen(
             }
         }
     }
+    if (showThemePicker) {
+        AlertDialog(
+            onDismissRequest = { showThemePicker = false },
+            title = { Text(stringResource(R.string.settings_theme)) },
+            text = {
+                Column {
+                    ThemeMode.entries.forEach { mode ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().selectable(
+                                selected = state.themeMode == mode,
+                                role = Role.RadioButton,
+                                onClick = { viewModel.setThemeMode(mode); showThemePicker = false },
+                            ).padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = state.themeMode == mode, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(mode.labelResource()))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showThemePicker = false }) { Text(stringResource(R.string.close)) } },
+        )
+    }
+
 }
 
 private const val SUPPORT_EMAIL = "photosoap@brokenmoha.de"
@@ -242,4 +293,10 @@ private fun SettingsTextAction(
             }
         }
     }
+}
+
+private fun ThemeMode.labelResource(): Int = when (this) {
+    ThemeMode.SYSTEM -> R.string.theme_system
+    ThemeMode.LIGHT -> R.string.theme_light
+    ThemeMode.DARK -> R.string.theme_dark
 }

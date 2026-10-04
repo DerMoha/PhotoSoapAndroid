@@ -1,8 +1,13 @@
 package com.photosoap.android.domain.repository
 
+import com.photosoap.android.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
+    val themeMode: Flow<ThemeMode>
+    val dynamicColor: Flow<Boolean>
+    suspend fun setThemeMode(mode: ThemeMode)
+    suspend fun setDynamicColor(enabled: Boolean)
     val hasSeenOnboarding: Flow<Boolean>
     val hapticsEnabled: Flow<Boolean>
     val useDeleteQueue: Flow<Boolean>

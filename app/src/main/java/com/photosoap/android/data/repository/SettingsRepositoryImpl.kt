@@ -2,6 +2,7 @@ package com.photosoap.android.data.repository
 
 import com.photosoap.android.data.local.datastore.SettingsDataStore
 import com.photosoap.android.domain.repository.SettingsRepository
+import com.photosoap.android.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -9,6 +10,10 @@ class SettingsRepositoryImpl @Inject constructor(
     private val dataStore: SettingsDataStore,
 ) : SettingsRepository {
 
+    override val themeMode = dataStore.themeMode
+    override val dynamicColor = dataStore.dynamicColor
+    override suspend fun setThemeMode(mode: ThemeMode) = dataStore.setThemeMode(mode)
+    override suspend fun setDynamicColor(enabled: Boolean) = dataStore.setDynamicColor(enabled)
     override val hasSeenOnboarding: Flow<Boolean> = dataStore.hasSeenOnboarding
     override val hapticsEnabled: Flow<Boolean> = dataStore.hapticsEnabled
     override val useDeleteQueue: Flow<Boolean> = dataStore.useDeleteQueue

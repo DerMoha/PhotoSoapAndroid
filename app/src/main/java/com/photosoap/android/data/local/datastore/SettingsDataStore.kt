@@ -1,5 +1,6 @@
 package com.photosoap.android.data.local.datastore
 
+import com.photosoap.android.domain.model.ThemeMode
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -17,6 +18,8 @@ class SettingsDataStore(private val context: Context) {
 
     companion object {
         private val KEY_HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         private val KEY_HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         private val KEY_USE_DELETE_QUEUE = booleanPreferencesKey("use_delete_queue")
         private val KEY_ANALYTICS_ENABLED = booleanPreferencesKey("analytics_enabled")
@@ -32,6 +35,13 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_SEEN_ONBOARDING] ?: false }
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
+        ThemeMode.entries.firstOrNull { it.name == preferences[KEY_THEME_MODE] } ?: ThemeMode.SYSTEM
+    }
+    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { it[KEY_DYNAMIC_COLOR] ?: true }
+    suspend fun setThemeMode(mode: ThemeMode) { context.dataStore.edit { it[KEY_THEME_MODE] = mode.name } }
+    suspend fun setDynamicColor(enabled: Boolean) { context.dataStore.edit { it[KEY_DYNAMIC_COLOR] = enabled } }
+
     val hapticsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_HAPTICS_ENABLED] ?: true }
     val useDeleteQueue: Flow<Boolean> = context.dataStore.data.map { it[KEY_USE_DELETE_QUEUE] ?: true }
     val analyticsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_ANALYTICS_ENABLED] ?: false }

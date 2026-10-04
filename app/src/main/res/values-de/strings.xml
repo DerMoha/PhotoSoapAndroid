@@ -185,5 +185,12 @@
     <string name="daily_goal_title">Tagesziel</string>
     <string name="daily_goal_reviewed">%1$d von %2$d durchgesehen</string>
     <string name="daily_goal_deleted">%1$d von %2$d gelöscht</string>
+    <string name="settings_appearance">Darstellung</string>
+    <string name="settings_theme">Design</string>
+    <string name="theme_system">Systemeinstellung</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="settings_dynamic_color">Hintergrundfarben</string>
+    <string name="settings_dynamic_color_desc">Farben deines Android-Hintergrunds verwenden</string>
     <string name="achievement_progress_percent">%1$d%%</string>
 </resources>

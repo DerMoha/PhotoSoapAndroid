@@ -1,5 +1,7 @@
 package com.photosoap.android.ui.settings
 
+import com.photosoap.android.domain.model.ThemeMode
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.photosoap.android.domain.repository.SettingsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -31,6 +33,10 @@ class SettingsViewModelTest {
         every { settingsRepository.hapticsEnabled } returns flowOf(true)
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
         every { settingsRepository.analyticsEnabled } returns flowOf(false)
+        every { settingsRepository.themeMode } returns flowOf(ThemeMode.SYSTEM)
+        every { settingsRepository.dynamicColor } returns flowOf(true)
+        coEvery { settingsRepository.setThemeMode(any()) } returns Unit
+        coEvery { settingsRepository.setDynamicColor(any()) } returns Unit
         coEvery { settingsRepository.setHapticsEnabled(any()) } returns Unit
         coEvery { settingsRepository.setUseDeleteQueue(any()) } returns Unit
         coEvery { settingsRepository.setAnalyticsEnabled(any()) } returns Unit
@@ -84,5 +90,21 @@ class SettingsViewModelTest {
         every { settingsRepository.analyticsEnabled } returns flowOf(true)
         val vm = SettingsViewModel(settingsRepository)
         assertEquals(true, vm.uiState.value.analyticsEnabled)
+    }
+    @Test
+    fun `appearance choices persist and flow changes update settings`() = runTest(testDispatcher) {
+        val mode = MutableStateFlow(ThemeMode.SYSTEM)
+        val dynamic = MutableStateFlow(true)
+        every { settingsRepository.themeMode } returns mode
+        every { settingsRepository.dynamicColor } returns dynamic
+        coEvery { settingsRepository.setThemeMode(any()) } coAnswers { mode.value = firstArg() }
+        coEvery { settingsRepository.setDynamicColor(any()) } coAnswers { dynamic.value = firstArg() }
+        val vm = SettingsViewModel(settingsRepository)
+        vm.setThemeMode(ThemeMode.DARK)
+        vm.toggleDynamicColor(false)
+        assertEquals(ThemeMode.DARK, vm.uiState.value.themeMode)
+        assertFalse(vm.uiState.value.dynamicColor)
+        coVerify { settingsRepository.setThemeMode(ThemeMode.DARK) }
+        coVerify { settingsRepository.setDynamicColor(false) }
     }
 }
