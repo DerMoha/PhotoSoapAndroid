@@ -240,4 +240,5 @@
     <string name="review_library_videos_complete">Du hast alle verfügbaren Videos in deiner Mediathek geprüft.</string>
     <string name="filter_all_images">Alle Fotos</string>
     <string name="filter_all_videos">Alle Videos</string>
+    <string name="review_queue_chip">Liste · %1$d</string>
 </resources>

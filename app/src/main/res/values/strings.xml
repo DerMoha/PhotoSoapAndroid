@@ -251,4 +251,5 @@
     <string name="review_library_videos_complete">You have reviewed all available videos in your library.</string>
     <string name="filter_all_images">All photos</string>
     <string name="filter_all_videos">All videos</string>
+    <string name="review_queue_chip">Delete List · %1$d</string>
 </resources>

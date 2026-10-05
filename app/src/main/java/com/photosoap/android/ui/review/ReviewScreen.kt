@@ -84,6 +84,12 @@ fun ReviewScreen(
 ) {
     var showRestartConfirmation by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var previewHintShownThisVisit by remember { mutableStateOf(false) }
+    var showPreviewHint by remember { mutableStateOf(false) }
+    LaunchedEffect(state.previewHintSeen, state.currentPhoto != null) {
+        showPreviewHint = !state.previewHintSeen && !previewHintShownThisVisit && state.currentPhoto != null
+        if (showPreviewHint) { previewHintShownThisVisit = true; kotlinx.coroutines.delay(3500); showPreviewHint = false }
+    }
     var lastDecision by remember { mutableStateOf<Pair<String, SwipeDirection>?>(null) }
     LaunchedEffect(lastDecision) {
         if (lastDecision != null) { kotlinx.coroutines.delay(1400); lastDecision = null }
@@ -256,7 +262,7 @@ fun ReviewScreen(
                                 enabled = !state.isDeleting,
                                 controller = swipeController,
                                 onThreshold = { haptics.swipeThreshold() },
-                                onCommit = { haptics.swipeConfirmed() },
+                                onCommit = { showPreviewHint = false; lastDecision = null; haptics.swipeConfirmed() },
                                 nextContent = upcoming.firstOrNull()?.let { next ->
                                     { PhotoCardContent(next, imageRequest = remember(next.uri, cardSize) {
                                         if (cardSize.width > 0 && cardSize.height > 0)
@@ -301,6 +307,7 @@ fun ReviewScreen(
                             ) {
                                 PhotoCardContent(
                                     photo = photo,
+                                    remainingText = pluralStringResource(R.plurals.review_remaining, state.photosRemaining, state.photosRemaining),
                                     imageRequest = remember(photo.uri, cardSize) {
                                         if (cardSize.width > 0 && cardSize.height > 0)
                                             com.photosoap.android.ui.components.reviewImageRequest(context, photo, cardSize)
@@ -310,81 +317,39 @@ fun ReviewScreen(
                             }
                             }
                         }
-                    }
-
-                    if (!state.previewHintSeen) {
-                        TextButton(
-                            onClick = { viewModel.onEvent(ReviewUiEvent.TappedCard) },
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                        ) { Text(stringResource(R.string.review_preview_hint)) }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = when (lastDecision?.second) {
+                        val feedback = when (lastDecision?.second) {
                             SwipeDirection.KEEP -> stringResource(R.string.review_kept_feedback)
-                            SwipeDirection.DELETE -> stringResource(
-                                if (state.useDeleteQueue) R.string.review_queued_feedback else R.string.review_marked_feedback
-                            )
-                            null -> pluralStringResource(R.plurals.review_remaining, state.photosRemaining, state.photosRemaining)
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        textAlign = TextAlign.Center,
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        FilledTonalButton(
-                            shapes = ButtonDefaults.shapesFor(56.dp),
-                            contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
-                            onClick = {
-                                swipeController.swipe(SwipeDirection.DELETE)
-                            },
-                            enabled = !state.isDeleting && !swipeController.busy,
-                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(ButtonDefaults.iconSizeFor(56.dp)),
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(stringResource(R.string.review_delete))
+                            SwipeDirection.DELETE -> stringResource(if (state.useDeleteQueue) R.string.review_queued_feedback else R.string.review_marked_feedback)
+                            null -> null
                         }
-
-                        Button(
-                            shapes = ButtonDefaults.shapesFor(56.dp),
-                            contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
-                            onClick = {
-                                swipeController.swipe(SwipeDirection.KEEP)
-                            },
-                            enabled = !state.isDeleting && !swipeController.busy,
-                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(ButtonDefaults.iconSizeFor(56.dp)),
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(stringResource(R.string.review_keep))
+                        if (feedback != null || showPreviewHint) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.inverseSurface,
+                                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                            ) {
+                                Text(
+                                    feedback ?: stringResource(R.string.review_preview_hint),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
+
+                    com.photosoap.android.ui.components.ReviewActionDock(
+                        pendingCount = state.pendingDeletions.size,
+                        enabled = !state.isDeleting && !swipeController.busy,
+                        onDelete = { swipeController.swipe(SwipeDirection.DELETE) },
+                        onKeep = { swipeController.swipe(SwipeDirection.KEEP) },
+                        onUndo = {
+                            haptics.selection()
+                            viewModel.onEvent(ReviewUiEvent.UndoLastDeletion)
+                        },
+                        onOpenList = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
+                    )
 
                 }
                 }
@@ -405,7 +370,7 @@ fun ReviewScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            if (state.hasPendingDeletions) {
+            if (state.hasPendingDeletions && (state.isLoading || state.isReviewComplete || state.photos.isEmpty() || state.loadError != null)) {
                 DeleteQueueTray(
                     enabled = !state.isDeleting,
                     itemCount = state.pendingDeletions.size,

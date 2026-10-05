@@ -42,6 +42,7 @@ fun PhotoCardContent(
     photo: Photo,
     modifier: Modifier = Modifier,
     imageRequest: ImageRequest? = null,
+    remainingText: String? = null,
 ) {
     val dateMillis = photo.effectiveDateMillis
 
@@ -76,6 +77,14 @@ fun PhotoCardContent(
                 )
                 .padding(16.dp),
         ) {
+            if (remainingText != null) {
+                Text(
+                    remainingText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f),
+                )
+                Spacer(Modifier.height(4.dp))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (photo.isVideo) {
                     Icon(
