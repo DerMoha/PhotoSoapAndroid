@@ -40,7 +40,7 @@ Never commit the keystore, passwords, or the Supabase publishable key file. The 
 
 ## External beta verification
 
-The current beta version is `1.0.0-beta.2`. Use JDK 17 and SDK 37.0 (build tools 37.0.0).
+The current beta version is `1.0.0-beta.3`. Use JDK 17 and SDK 37.0 (build tools 37.0.0).
 
 After configuring the upload key, run `./scripts/verify-beta.sh` for unit tests,
 lint, debug/release assembly, production configuration checks, and the Play bundle.
