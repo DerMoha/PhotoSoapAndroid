@@ -271,7 +271,9 @@ fun ReviewScreen(
                                 onThreshold = { haptics.swipeThreshold() },
                                 onCommit = { showPreviewHint = false; lastDecision = null; haptics.swipeConfirmed() },
                                 nextContent = upcoming.firstOrNull()?.let { next ->
-                                    { PhotoCardContent(next, imageRequest = remember(next.uri, cardSize) {
+                                    { PhotoCardContent(next,
+                                        remainingText = pluralStringResource(R.plurals.review_remaining, (state.photosRemaining - 1).coerceAtLeast(0), (state.photosRemaining - 1).coerceAtLeast(0)),
+                                        imageRequest = remember(next.uri, cardSize) {
                                         if (cardSize.width > 0 && cardSize.height > 0)
                                             com.photosoap.android.ui.components.reviewImageRequest(context, next, cardSize)
                                         else null
