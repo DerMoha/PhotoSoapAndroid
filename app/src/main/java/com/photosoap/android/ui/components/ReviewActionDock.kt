@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.photosoap.android.R
 
 /** One compact row normally; wraps rather than clipping at larger accessibility font sizes. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReviewActionDock(
     pendingCount: Int,
@@ -39,6 +41,7 @@ fun ReviewActionDock(
         maxItemsInEachRow = if (LocalDensity.current.fontScale > 1.3f) 2 else 4,
     ) {
         FilledTonalButton(
+            shapes = ButtonDefaults.shapesFor(48.dp),
             onClick = onDelete,
             enabled = enabled,
             modifier = Modifier.weight(1f).heightIn(min = 48.dp),
@@ -49,6 +52,7 @@ fun ReviewActionDock(
             ),
         ) { Text(stringResource(R.string.review_delete)) }
         Button(
+            shapes = ButtonDefaults.shapesFor(48.dp),
             onClick = onKeep,
             enabled = enabled,
             modifier = Modifier.weight(1f).heightIn(min = 48.dp),
@@ -59,6 +63,7 @@ fun ReviewActionDock(
                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = stringResource(R.string.undo))
             }
             FilledTonalButton(
+                shapes = ButtonDefaults.shapesFor(48.dp),
                 onClick = onOpenList,
                 enabled = enabled,
                 modifier = Modifier.heightIn(min = 48.dp),

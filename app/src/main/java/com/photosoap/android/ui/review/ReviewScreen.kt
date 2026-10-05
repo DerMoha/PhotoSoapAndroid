@@ -53,6 +53,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
@@ -326,7 +329,9 @@ fun ReviewScreen(
                         }
                         if (feedback != null || showPreviewHint) {
                             Surface(
-                                modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
+                                modifier = Modifier.align(Alignment.TopCenter).padding(12.dp).then(
+                                    if (feedback != null) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier
+                                ),
                                 shape = MaterialTheme.shapes.extraLarge,
                                 color = MaterialTheme.colorScheme.inverseSurface,
                                 contentColor = MaterialTheme.colorScheme.inverseOnSurface,
