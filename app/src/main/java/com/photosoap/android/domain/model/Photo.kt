@@ -10,6 +10,7 @@ data class Photo(
     val fileSize: Long,
     val width: Int,
     val height: Int,
+    val isFavorite: Boolean = false,
     val duration: Long = 0,
     val bucketId: Long = 0,
     val bucketName: String = "",

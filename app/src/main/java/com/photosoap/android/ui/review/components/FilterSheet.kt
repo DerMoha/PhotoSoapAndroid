@@ -1,5 +1,9 @@
 package com.photosoap.android.ui.review.components
 
+import com.photosoap.android.domain.model.SmartAlbum
+
+import com.photosoap.android.domain.model.ReviewProgress
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.photosoap.android.ui.review.titleResource
 import com.photosoap.android.R
 import com.photosoap.android.domain.model.MediaKind
 import com.photosoap.android.domain.model.ReviewFilter
@@ -44,6 +49,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterSheet(
+    smartCounts: Map<SmartAlbum, Int>,
+    progress: Map<YearMonth, ReviewProgress>,
+    isLoading: Boolean,
+    hasError: Boolean,
+    onRetry: () -> Unit,
+    hideFavorites: Boolean,
+    onHideFavoritesChange: (Boolean) -> Unit,
     selectedKind: MediaKind,
     selectedSort: SortOrder,
     selectedFilter: ReviewFilter,
@@ -59,7 +71,7 @@ fun FilterSheet(
     onDismiss: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0]
-    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -77,6 +89,20 @@ fun FilterSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
+            if (isLoading) androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            if (hasError) {
+                Text(stringResource(R.string.filter_load_error))
+                androidx.compose.material3.TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.filter_hide_favorites), Modifier.weight(1f))
+                    androidx.compose.material3.Switch(checked = hideFavorites, onCheckedChange = onHideFavoritesChange)
+                }
+                Text(stringResource(R.string.filter_hide_favorites_help), style = MaterialTheme.typography.bodySmall)
+            } else {
+                Text(stringResource(R.string.filter_favorites_unavailable), style = MaterialTheme.typography.bodySmall)
+            }
             MediaKind.entries.forEach { kind ->
                 Row(
                     modifier = Modifier
@@ -150,6 +176,7 @@ fun FilterSheet(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            if (!isLoading && !hasError) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -163,7 +190,7 @@ fun FilterSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.filter_all_photos),
+                    text = stringResource(when (selectedKind) { MediaKind.PHOTOS -> R.string.filter_all_images; MediaKind.VIDEOS -> R.string.filter_all_videos; MediaKind.ALL -> R.string.filter_all_photos }),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
@@ -188,8 +215,9 @@ fun FilterSheet(
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
+                    if (months.isEmpty()) Text(stringResource(R.string.filter_no_months), style = MaterialTheme.typography.bodySmall)
                     Column {
-                        months.forEach { month ->
+                        (if (selectedSort == SortOrder.OLDEST_FIRST) months.sorted() else months.sortedDescending()).forEach { month ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -208,10 +236,10 @@ fun FilterSheet(
                                     },
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = month.month.getDisplayName(TextStyle.FULL, locale),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(month.month.getDisplayName(TextStyle.FULL, locale), style = MaterialTheme.typography.bodyLarge)
+                                    progress[month]?.let { FilterProgress(it) }
+                                }
                             }
                         }
                     }
@@ -228,8 +256,9 @@ fun FilterSheet(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                if (years.isEmpty()) Text(stringResource(R.string.filter_no_years), style = MaterialTheme.typography.bodySmall)
                 Column {
-                    years.forEach { year ->
+                    (if (selectedSort == SortOrder.OLDEST_FIRST) years.sorted() else years.sortedDescending()).forEach { year ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -242,7 +271,11 @@ fun FilterSheet(
                                 onClick = { onFilterSelected(ReviewFilter.Year(year)) },
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = year.toString(), style = MaterialTheme.typography.bodyLarge)
+                            Column(Modifier.weight(1f)) {
+                                Text(text = year.toString(), style = MaterialTheme.typography.bodyLarge)
+                                val values = progress.filterKeys { it.year == year }.values
+                                FilterProgress(ReviewProgress(values.sumOf { it.reviewed }, values.sumOf { it.total }))
+                            }
                         }
                     }
                 }
@@ -257,6 +290,7 @@ fun FilterSheet(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                if (albums.isEmpty()) Text(stringResource(R.string.filter_no_albums), style = MaterialTheme.typography.bodySmall)
                 Column {
                     albums.forEach { album ->
                         Row(
@@ -296,7 +330,28 @@ fun FilterSheet(
                 }
             }
 
+            Text(stringResource(R.string.filter_smart_albums), style = MaterialTheme.typography.titleSmall)
+            smartCounts.filterValues { it > 0 }.forEach { (kind, count) ->
+                Row(Modifier.fillMaxWidth().selectable(selected = selectedFilter == ReviewFilter.Smart(kind), role = Role.RadioButton,
+                    onClick = { onFilterSelected(ReviewFilter.Smart(kind)) }).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = selectedFilter == ReviewFilter.Smart(kind), onClick = null)
+                    Text(stringResource(kind.titleResource), Modifier.weight(1f))
+                    Text(count.toString(), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            if (smartCounts.values.none { it > 0 }) Text(stringResource(R.string.filter_no_albums), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.filter_smart_help), style = MaterialTheme.typography.bodySmall)
+            }
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+private fun FilterProgress(progress: ReviewProgress) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.filter_reviewed_count, progress.reviewed, progress.total), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Text(java.text.NumberFormat.getPercentInstance().format(progress.displayFraction.toDouble()) + if (progress.isComplete) " ✓" else "", style = MaterialTheme.typography.labelLarge)
+    }
+    androidx.compose.material3.LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
 }

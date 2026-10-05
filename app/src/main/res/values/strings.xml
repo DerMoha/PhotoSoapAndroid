@@ -234,7 +234,7 @@
     <string name="stats_media_counts">%1$d reviewed · %2$d kept · %3$d deleted</string>
     <string name="stats_media_storage">%1$s freed</string>
     <string name="stats_media_history">Earlier reviews remain in your overall totals. Separate photo and video totals are tracked from this update.</string>
-    <string name="review_cycle_summary">%1$d reviewed · %2$d kept · %3$d deleted</string>
+    <string name="review_cycle_summary">This pass: %1$d reviewed · %2$d kept · %3$d deleted</string>
     <string name="review_pending_summary">%1$d in delete list · %2$s pending</string>
     <string name="review_limited_complete">You have reviewed the media PhotoSoap can access. Choose more media to continue.</string>
     <string name="review_review_delete_list">Review delete list</string>
@@ -247,4 +247,8 @@
     <string name="filter_animated">GIFs</string>
     <string name="filter_raw">RAW photos</string>
     <string name="preview_zoom">Zoom %1$s</string>
+    <string name="review_library_photos_complete">You have reviewed all available photos in your library.</string>
+    <string name="review_library_videos_complete">You have reviewed all available videos in your library.</string>
+    <string name="filter_all_images">All photos</string>
+    <string name="filter_all_videos">All videos</string>
 </resources>

@@ -1,5 +1,7 @@
 package com.photosoap.android.ui.review
 
+import com.photosoap.android.domain.model.ReviewFilter
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -80,6 +82,7 @@ fun ReviewScreen(
     onNavigateToSettings: () -> Unit = {},
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
+    var showRestartConfirmation by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var lastDecision by remember { mutableStateOf<Pair<String, SwipeDirection>?>(null) }
     LaunchedEffect(lastDecision) {
@@ -146,7 +149,7 @@ fun ReviewScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 CompactHeader(
-                    hasActiveFilter = state.filter !is com.photosoap.android.domain.model.ReviewFilter.All ||
+                    hasActiveFilter = state.filter !is ReviewFilter.All ||
                         state.mediaKind != com.photosoap.android.domain.model.MediaKind.ALL,
                     dailyChallengeProgress = state.dailyChallengeProgress,
                     dailyChallengeTarget = state.dailyChallengeTarget,
@@ -205,8 +208,12 @@ fun ReviewScreen(
 
             state.isReviewComplete -> {
                 ReviewCompleteContent(
+                    state = state,
+                    isLimitedAccess = isLimitedAccess,
+                    onManageAccess = onManageAccess,
+                    onChangeFilter = { viewModel.onEvent(ReviewUiEvent.OpenFilterSheet) },
                     pendingDeletionCount = state.pendingDeletions.size,
-                    onStartOver = { viewModel.onEvent(ReviewUiEvent.StartOver) },
+                    onStartOver = { showRestartConfirmation = true },
                     onReviewDeletions = { viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue) },
                 )
             }
@@ -305,6 +312,12 @@ fun ReviewScreen(
                         }
                     }
 
+                    if (!state.previewHintSeen) {
+                        TextButton(
+                            onClick = { viewModel.onEvent(ReviewUiEvent.TappedCard) },
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        ) { Text(stringResource(R.string.review_preview_hint)) }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = when (lastDecision?.second) {
@@ -409,8 +422,37 @@ fun ReviewScreen(
     }
     }
 
+    if (showRestartConfirmation) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRestartConfirmation = false },
+            title = { Text(stringResource(R.string.review_restart_title)) },
+            text = {
+                Column {
+                    Text(stringResource(if (state.hasPendingDeletions) R.string.review_restart_queue_help else R.string.review_restart_help))
+                    if (state.hasPendingDeletions) {
+                        TextButton(onClick = {
+                            showRestartConfirmation = false
+                            viewModel.onEvent(ReviewUiEvent.OpenDeleteQueue)
+                        }) { Text(stringResource(R.string.review_review_delete_list)) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = {
+                showRestartConfirmation = false
+                viewModel.onEvent(ReviewUiEvent.StartOver)
+            }) { Text(stringResource(R.string.review_again)) } },
+            dismissButton = { TextButton(onClick = { showRestartConfirmation = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
     if (state.showFilterSheet) {
         FilterSheet(
+            smartCounts = state.smartCounts,
+            hideFavorites = state.hideFavorites,
+            onHideFavoritesChange = { viewModel.onEvent(ReviewUiEvent.ChangeHideFavorites(it)) },
+            progress = state.calendarProgress,
+            isLoading = state.filterLoading,
+            hasError = state.filterError,
+            onRetry = { viewModel.onEvent(ReviewUiEvent.RetryFilters) },
             selectedKind = state.mediaKind,
             selectedSort = state.sortOrder,
             selectedFilter = state.filter,
@@ -515,6 +557,10 @@ private fun SwipeHintBadge(
 
 @Composable
 private fun ReviewCompleteContent(
+    state: ReviewUiState,
+    isLimitedAccess: Boolean,
+    onManageAccess: () -> Unit,
+    onChangeFilter: () -> Unit,
     pendingDeletionCount: Int,
     onStartOver: () -> Unit,
     onReviewDeletions: () -> Unit,
@@ -522,6 +568,7 @@ private fun ReviewCompleteContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -532,18 +579,28 @@ private fun ReviewCompleteContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.review_all_reviewed),
+            text = stringResource(if (state.filter is ReviewFilter.All) R.string.review_all_reviewed else R.string.review_filter_complete),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.review_all_reviewed_description),
+            text = completionDescription(state),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(24.dp))
+        Text(stringResource(R.string.review_cycle_summary, state.cycleReviewed, state.cycleKept, state.cycleDeleted))
+        if (pendingDeletionCount > 0) {
+            Text(stringResource(R.string.review_pending_summary, pendingDeletionCount,
+                com.photosoap.android.util.FileSize.format(state.totalDeletionFileSize)))
+        }
+        if (isLimitedAccess) {
+            Text(stringResource(R.string.review_limited_complete))
+            TextButton(onClick = onManageAccess) { Text(stringResource(R.string.settings_photo_access)) }
+        }
+        TextButton(onClick = onChangeFilter) { Text(stringResource(R.string.review_change_filter)) }
         Button(onClick = onStartOver) {
             Text(stringResource(R.string.review_again))
         }
@@ -560,4 +617,29 @@ private fun ReviewCompleteContent(
             }
         }
     }
+}
+
+@Composable
+private fun completionDescription(state: ReviewUiState): String {
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    if (state.filter is ReviewFilter.All) {
+        return stringResource(when (state.mediaKind) {
+            com.photosoap.android.domain.model.MediaKind.PHOTOS -> R.string.review_library_photos_complete
+            com.photosoap.android.domain.model.MediaKind.VIDEOS -> R.string.review_library_videos_complete
+            com.photosoap.android.domain.model.MediaKind.ALL -> R.string.review_all_reviewed_description
+        })
+    }
+    val scope = when (val filter = state.filter) {
+        ReviewFilter.All -> stringResource(when (state.mediaKind) {
+            com.photosoap.android.domain.model.MediaKind.PHOTOS -> R.string.filter_photos
+            com.photosoap.android.domain.model.MediaKind.VIDEOS -> R.string.filter_videos
+            com.photosoap.android.domain.model.MediaKind.ALL -> R.string.filter_all_media
+        })
+        is ReviewFilter.Year -> filter.year.toString()
+        is ReviewFilter.Month -> java.time.YearMonth.of(filter.year, filter.month)
+            .format(java.time.format.DateTimeFormatter.ofPattern("LLLL yyyy", locale))
+        is ReviewFilter.Album -> filter.albumName
+        is ReviewFilter.Smart -> stringResource(filter.kind.titleResource)
+    }
+    return stringResource(R.string.review_scope_complete, scope)
 }

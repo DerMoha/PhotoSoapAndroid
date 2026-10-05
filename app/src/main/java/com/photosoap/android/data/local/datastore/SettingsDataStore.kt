@@ -25,6 +25,8 @@ class SettingsDataStore(private val context: Context) {
         private val KEY_HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         private val KEY_USE_DELETE_QUEUE = booleanPreferencesKey("use_delete_queue")
         private val KEY_ANALYTICS_ENABLED = booleanPreferencesKey("analytics_enabled")
+        private val KEY_PREVIEW_HINT_SEEN = booleanPreferencesKey("preview_hint_seen")
+        private val KEY_HIDE_FAVORITES = booleanPreferencesKey("hide_favorites")
         private val KEY_MEDIA_KIND = stringPreferencesKey("media_kind")
         private val KEY_SORT_ORDER = stringPreferencesKey("sort_order")
         private val KEY_INSTALL_ID = stringPreferencesKey("install_id")
@@ -56,6 +58,10 @@ class SettingsDataStore(private val context: Context) {
     val hapticsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_HAPTICS_ENABLED] ?: true }
     val useDeleteQueue: Flow<Boolean> = context.dataStore.data.map { it[KEY_USE_DELETE_QUEUE] ?: true }
     val analyticsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_ANALYTICS_ENABLED] ?: false }
+    val previewHintSeen: Flow<Boolean> = context.dataStore.data.map { it[KEY_PREVIEW_HINT_SEEN] ?: false }
+    suspend fun setPreviewHintSeen() { context.dataStore.edit { it[KEY_PREVIEW_HINT_SEEN] = true } }
+    val hideFavorites: Flow<Boolean> = context.dataStore.data.map { it[KEY_HIDE_FAVORITES] ?: true }
+    suspend fun setHideFavorites(enabled: Boolean) { context.dataStore.edit { it[KEY_HIDE_FAVORITES] = enabled } }
     val mediaKind: Flow<String> = context.dataStore.data.map { it[KEY_MEDIA_KIND] ?: "ALL" }
     val sortOrder: Flow<String> = context.dataStore.data.map { it[KEY_SORT_ORDER] ?: "NEWEST_FIRST" }
     val installId: Flow<String> = context.dataStore.data.map { it[KEY_INSTALL_ID] ?: "" }

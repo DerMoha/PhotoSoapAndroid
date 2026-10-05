@@ -21,6 +21,10 @@ class SettingsRepositoryImpl @Inject constructor(
     override val hapticsEnabled: Flow<Boolean> = dataStore.hapticsEnabled
     override val useDeleteQueue: Flow<Boolean> = dataStore.useDeleteQueue
     override val analyticsEnabled: Flow<Boolean> = dataStore.analyticsEnabled
+    override val previewHintSeen = dataStore.previewHintSeen
+    override suspend fun setPreviewHintSeen() = dataStore.setPreviewHintSeen()
+    override val hideFavorites = dataStore.hideFavorites
+    override suspend fun setHideFavorites(enabled: Boolean) = dataStore.setHideFavorites(enabled)
     override val mediaKind: Flow<String> = dataStore.mediaKind
     override val sortOrder: Flow<String> = dataStore.sortOrder
     override val pendingDeletions: Flow<String> = dataStore.pendingDeletions

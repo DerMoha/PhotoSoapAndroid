@@ -1,5 +1,9 @@
 package com.photosoap.android.ui.review
 
+import com.photosoap.android.domain.model.SmartAlbum
+
+import com.photosoap.android.domain.model.ReviewProgress
+
 import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
@@ -75,10 +79,10 @@ class ReviewViewModel @Inject constructor(
 
     private var mediaObserver: ContentObserver? = null
     private var loadPhotosJob: Job? = null
+    private var filterLoadJob: Job? = null
     private var activeDeletionRequestId: String? = null
     private var activeDeletionItems: List<PendingDeletionItem> = emptyList()
     private val legacyDeletedItems = mutableListOf<PendingDeletionItem>()
-    private var monthLoadJob: Job? = null
     private var isInitialized = false
     private var queuePersistenceJob: Job? = null
     private var restoredDeletionRequest: DeletionRequestJournal? = null
@@ -118,7 +122,7 @@ class ReviewViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         loadPhotosJob?.cancel()
-        monthLoadJob?.cancel()
+        filterLoadJob?.cancel()
         mediaObserver?.let { context.contentResolver.unregisterContentObserver(it) }
     }
 
@@ -132,7 +136,10 @@ class ReviewViewModel @Inject constructor(
         when (event) {
             ReviewUiEvent.RetryLoad -> onResume()
             is ReviewUiEvent.Swiped -> handleSwipe(event.direction, event.photoUri)
-            ReviewUiEvent.TappedCard -> _uiState.update { it.copy(showPhotoPreview = true, previewPhoto = it.currentPhoto) }
+            ReviewUiEvent.TappedCard -> {
+                _uiState.update { it.copy(showPhotoPreview = true, previewPhoto = it.currentPhoto, previewHintSeen = true) }
+                viewModelScope.launch { settingsRepository.setPreviewHintSeen() }
+            }
             ReviewUiEvent.UndoLastDeletion -> undoLastDeletion()
             ReviewUiEvent.OpenDeleteQueue -> _uiState.update { it.copy(showDeleteQueueSheet = true) }
             ReviewUiEvent.RequestDeleteConfirmation -> _uiState.update {
@@ -146,7 +153,24 @@ class ReviewViewModel @Inject constructor(
             is ReviewUiEvent.ChangeMediaKind -> changeMediaKind(event.kind)
             is ReviewUiEvent.ChangeSortOrder -> changeSortOrder(event.order)
             is ReviewUiEvent.ChangeFilter -> changeFilter(event.filter)
-            ReviewUiEvent.OpenFilterSheet -> _uiState.update { it.copy(showFilterSheet = true) }
+            is ReviewUiEvent.ChangeHideFavorites -> {
+                _uiState.update { it.copy(hideFavorites = event.enabled) }
+                viewModelScope.launch { settingsRepository.setHideFavorites(event.enabled) }
+                loadPhotos()
+                loadFilterData()
+            }
+            ReviewUiEvent.RetryFilters -> loadFilterData()
+            ReviewUiEvent.OpenFilterSheet -> {
+                _uiState.update { state ->
+                    val selectedYear = when (val filter = state.filter) {
+                        is ReviewFilter.Year -> filter.year
+                        is ReviewFilter.Month -> filter.year
+                        else -> state.selectedYear
+                    }
+                    state.copy(showFilterSheet = true, selectedYear = selectedYear)
+                }
+                loadFilterData()
+            }
             ReviewUiEvent.CloseFilterSheet -> _uiState.update { it.copy(showFilterSheet = false) }
             ReviewUiEvent.OpenPhotoPreview -> _uiState.update { it.copy(showPhotoPreview = true, previewPhoto = it.currentPhoto) }
             ReviewUiEvent.ClosePhotoPreview -> _uiState.update { it.copy(showPhotoPreview = false, previewPhoto = null) }
@@ -165,15 +189,18 @@ class ReviewViewModel @Inject constructor(
         if (expectedUri != null && photo.uri != expectedUri) return
         if (!reviewedInSession.add(photo.uri)) return
 
+        _uiState.update { it.copy(cycleReviewed = it.cycleReviewed + 1,
+            cycleKept = it.cycleKept + if (direction == SwipeDirection.KEEP) 1 else 0,
+            cycleUris = it.cycleUris + photo.uri) }
         when (direction) {
             SwipeDirection.KEEP -> {
                 reviewInSession(photo.uri)
-                advanceStats(kept = true)
+                advanceStats(photo, kept = true)
                 viewModelScope.launch { metricsRepository.trackKept() }
             }
             SwipeDirection.DELETE -> {
                 reviewInSession(photo.uri)
-                advanceStats()
+                advanceStats(photo)
                 addToDeletionQueue(photo)
 
             }
@@ -202,7 +229,7 @@ class ReviewViewModel @Inject constructor(
         }
     }
 
-    private fun advanceStats(kept: Boolean = false) {
+    private fun advanceStats(photo: Photo, kept: Boolean = false) {
         viewModelScope.launch {
             statsMutex.withLock {
                 val now = System.currentTimeMillis()
@@ -233,6 +260,10 @@ class ReviewViewModel @Inject constructor(
                 ) 1 else 0
 
                 val updated = normalized.copy(
+                    photosReviewed = normalized.photosReviewed + if (photo.isVideo) 0 else 1,
+                    videosReviewed = normalized.videosReviewed + if (photo.isVideo) 1 else 0,
+                    photosKept = normalized.photosKept + if (kept && !photo.isVideo) 1 else 0,
+                    videosKept = normalized.videosKept + if (kept && photo.isVideo) 1 else 0,
                     totalReviewed = normalized.totalReviewed + 1,
                     totalKept = if (kept) normalized.totalKept + 1 else normalized.totalKept,
                     sessionReviewCount = normalized.sessionReviewCount + 1,
@@ -324,10 +355,13 @@ class ReviewViewModel @Inject constructor(
 
     private fun markQueuedItemsAsKept(items: List<PendingDeletionItem>) {
         if (items.isEmpty()) return
+        _uiState.update { it.copy(cycleKept = it.cycleKept + items.count { item -> item.uri in it.cycleUris }) }
         viewModelScope.launch {
             statsMutex.withLock {
                 val current = statsRepository.getStats() ?: return@launch
                 val updated = current.copy(
+                    photosKept = current.photosKept + items.count { it.mimeType.startsWith("image/") },
+                    videosKept = current.videosKept + items.count { it.mimeType.startsWith("video/") },
                     totalKept = current.totalKept + items.size,
                 )
                 statsRepository.updateStats(updated)
@@ -568,13 +602,18 @@ class ReviewViewModel @Inject constructor(
                 normalized.dailyChallengeType == DailyChallenge.ChallengeType.DELETE.label
             ) items.size else 0
             val updated = normalized.copy(
+                photosDeleted = normalized.photosDeleted + items.count { it.mimeType.startsWith("image/") },
+                videosDeleted = normalized.videosDeleted + items.count { it.mimeType.startsWith("video/") },
+                photoStorageFreed = normalized.photoStorageFreed + items.filter { it.mimeType.startsWith("image/") }.sumOf { it.fileSize },
+                videoStorageFreed = normalized.videoStorageFreed + items.filter { it.mimeType.startsWith("video/") }.sumOf { it.fileSize },
                 totalDeleted = normalized.totalDeleted + items.size,
                 storageFreed = normalized.storageFreed + items.sumOf { it.fileSize },
                 dailyChallengeProgress = normalized.dailyChallengeProgress + challengeDelta,
             )
             val applied = statsRepository.updateStatsForDeletionOnce(requestId, updated)
             val persisted = if (applied) updated else statsRepository.getStats() ?: updated
-            _uiState.update { it.copy(stats = persisted) }
+            _uiState.update { state -> state.copy(stats = persisted,
+                cycleDeleted = state.cycleDeleted + if (applied) items.count { it.uri in state.cycleUris } else 0) }
         }
         checkAchievements()
         checkDailyChallenge()
@@ -594,11 +633,12 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun changeMediaKind(kind: MediaKind) {
-        _uiState.update { it.copy(mediaKind = kind) }
+        _uiState.update { it.copy(mediaKind = kind, cycleReviewed = 0, cycleKept = 0, cycleDeleted = 0, cycleUris = emptySet()) }
         viewModelScope.launch {
             settingsRepository.setMediaKind(kind.name)
         }
         loadPhotos()
+        loadFilterData()
     }
 
     private fun changeSortOrder(order: SortOrder) {
@@ -610,7 +650,7 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun changeFilter(filter: ReviewFilter) {
-        _uiState.update { it.copy(filter = filter, showFilterSheet = false) }
+        _uiState.update { it.copy(filter = filter, showFilterSheet = false, cycleReviewed = 0, cycleKept = 0, cycleDeleted = 0, cycleUris = emptySet()) }
         loadPhotos()
     }
 
@@ -636,6 +676,7 @@ class ReviewViewModel @Inject constructor(
                 it.copy(
                     currentIndex = 0,
                     isReviewComplete = false,
+                    cycleReviewed = 0, cycleKept = 0, cycleDeleted = 0, cycleUris = emptySet(),
                 )
             }
             loadPhotos()
@@ -718,6 +759,10 @@ class ReviewViewModel @Inject constructor(
     }
 
     private suspend fun loadSettings() {
+        val previewHintSeen = settingsRepository.previewHintSeen.first()
+        _uiState.update { it.copy(previewHintSeen = previewHintSeen) }
+        val hideFavorites = settingsRepository.hideFavorites.first()
+        _uiState.update { it.copy(hideFavorites = hideFavorites) }
         val kind = settingsRepository.mediaKind.first()
         val order = settingsRepository.sortOrder.first()
         val useQueue = settingsRepository.useDeleteQueue.first()
@@ -822,80 +867,42 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun loadFilterData() {
-        viewModelScope.launch {
+        filterLoadJob?.cancel()
+        val snapshot = _uiState.value
+        filterLoadJob = viewModelScope.launch {
+            _uiState.update { it.copy(filterLoading = true, filterError = false) }
             try {
-                withContext(ioDispatcher) {
-                    loadAlbums()
-                    loadYears()
+                val data = withContext(ioDispatcher) {
+                    val media = queryPhotos(snapshot.copy(filter = ReviewFilter.All))
+                    val reviewed = photoRepository.observeReviewedPhotoUris().first().toSet()
+                    val calendar = media.filter { it.effectiveDateMillis > 0 }.groupBy {
+                        YearMonth.from(java.time.Instant.ofEpochMilli(it.effectiveDateMillis).atZone(java.time.ZoneId.systemDefault()))
+                    }.mapValues { (_, items) ->
+                        ReviewProgress(items.count { it.uri in reviewed }, items.size)
+                    }
+                    val albums = media.groupBy { it.bucketId }.map { (id, items) ->
+                        AlbumInfo(id, items.first().bucketName, items.size)
+                    }.sortedBy { it.name.lowercase() }
+                    Triple(calendar, albums, SmartAlbum.entries.associateWith { kind -> media.count { kind.matches(it) } })
                 }
-            } catch (_: Exception) { }
+                _uiState.update { state ->
+                    val years = data.first.keys.map { it.year }.distinct().sortedDescending()
+                    val year = state.selectedYear?.takeIf { it in years }
+                    state.copy(calendarProgress = data.first, albums = data.second, smartCounts = data.third, years = years,
+                        selectedYear = year, months = data.first.keys.filter { it.year == year }.sortedDescending(),
+                        filterLoading = false, filterError = false)
+                }
+            } catch (cancellation: CancellationException) { throw cancellation }
+            catch (_: Exception) { _uiState.update { it.copy(filterLoading = false, filterError = true) } }
         }
     }
 
     private fun selectYear(year: Int) {
-        _uiState.update { it.copy(selectedYear = year, months = emptyList()) }
-        monthLoadJob?.cancel()
-        monthLoadJob = viewModelScope.launch {
-            try {
-                val months = withContext(ioDispatcher) { mediaMonths().filter { it.year == year } }
-                if (_uiState.value.selectedYear == year) _uiState.update { it.copy(months = months) }
-            } catch (cancellation: CancellationException) { throw cancellation }
-            catch (_: Exception) { _uiState.update { it.copy(months = emptyList()) } }
-        }
+        _uiState.update { it.copy(selectedYear = year, months = it.calendarProgress.keys.filter { month -> month.year == year }.sortedDescending()) }
     }
 
     private fun deselectYear() {
-        monthLoadJob?.cancel()
         _uiState.update { it.copy(selectedYear = null, months = emptyList()) }
-    }
-
-    private fun mediaMonths(): List<YearMonth> {
-        val projection = arrayOf(MediaStore.Files.FileColumns.DATE_TAKEN, MediaStore.Files.FileColumns.DATE_ADDED)
-        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
-            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
-        val months = mutableSetOf<YearMonth>()
-        context.contentResolver.query(MediaStore.Files.getContentUri("external"), projection, selection, null, null)?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val taken = cursor.getLong(0)
-                val date = if (taken > 0) taken else cursor.getLong(1) * 1000L
-                if (date > 0) months += YearMonth.from(java.time.Instant.ofEpochMilli(date).atZone(java.time.ZoneId.systemDefault()))
-            }
-        }
-        return months.sortedDescending()
-    }
-
-    private fun loadAlbums() {
-        val uri = MediaStore.Files.getContentUri("external")
-        val projection = arrayOf(
-            MediaStore.Files.FileColumns.BUCKET_ID,
-            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
-        )
-        val selection = "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}" +
-            " OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
-        val albumCounts = linkedMapOf<Long, Pair<String, Int>>()
-
-        context.contentResolver.query(
-            uri, projection, selection, null,
-            "${MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME} ASC"
-        )?.use { cursor ->
-            val bucketIdCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_ID)
-            val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
-            while (cursor.moveToNext()) {
-                val bucketId = cursor.getLong(bucketIdCol)
-                val name = cursor.getString(bucketNameCol) ?: "Unknown"
-                val current = albumCounts[bucketId]
-                albumCounts[bucketId] = name to ((current?.second ?: 0) + 1)
-            }
-        }
-        val albums = albumCounts.map { (id, value) ->
-            AlbumInfo(id = id, name = value.first, count = value.second)
-        }
-        _uiState.update { it.copy(albums = albums) }
-    }
-
-    private fun loadYears() {
-        val years = mediaMonths().map { it.year }.distinct().sortedDescending()
-        _uiState.update { it.copy(years = years) }
     }
 
     fun onResume() {
@@ -942,10 +949,11 @@ class ReviewViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = !backgroundRefresh || it.isLoading || it.currentPhoto == null, loadError = null) }
 
             val sessionUris = reviewedInSession.toSet()
-            val photos = try {
+            val (photos, hasEligibleMedia) = try {
                 withContext(ioDispatcher) {
                     val reviewedUris = photoRepository.observeReviewedPhotoUris().first().toHashSet()
-                    queryPhotos(queryState).filterNot { it.uri in reviewedUris || it.uri in sessionUris }
+                    val media = queryPhotos(queryState)
+                    media.filterNot { it.uri in reviewedUris || it.uri in sessionUris } to media.isNotEmpty()
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
@@ -969,7 +977,7 @@ class ReviewViewModel @Inject constructor(
                     photos = refreshed,
                     isLoading = false,
                     currentIndex = 0,
-                    isReviewComplete = false,
+                    isReviewComplete = hasEligibleMedia && refreshed.isEmpty(),
                 )
             }
         }
@@ -988,13 +996,16 @@ class ReviewViewModel @Inject constructor(
             MediaStore.Files.FileColumns.DURATION,
             MediaStore.Files.FileColumns.BUCKET_ID,
             MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
-        )
+        ) + if (android.os.Build.VERSION.SDK_INT >= 30) arrayOf("is_favorite") else emptyArray()
 
         val uri = MediaStore.Files.getContentUri("external")
         val selection = buildString {
             append("(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}")
             append(" OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})")
 
+            if (state.hideFavorites && android.os.Build.VERSION.SDK_INT >= 30) {
+                append(" AND is_favorite=0")
+            }
             when (state.mediaKind) {
                 MediaKind.PHOTOS -> append(" AND ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}")
                 MediaKind.VIDEOS -> append(" AND ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO}")
@@ -1041,6 +1052,7 @@ class ReviewViewModel @Inject constructor(
                         fileSize = cursor.getLong(sizeCol),
                         width = cursor.getInt(widthCol),
                         height = cursor.getInt(heightCol),
+                        isFavorite = android.os.Build.VERSION.SDK_INT >= 30 && cursor.getInt(cursor.getColumnIndexOrThrow("is_favorite")) != 0,
                         duration = cursor.getLong(durationCol),
                         bucketId = cursor.getLong(bucketIdCol),
                         bucketName = cursor.getString(bucketNameCol) ?: "",
@@ -1053,6 +1065,7 @@ class ReviewViewModel @Inject constructor(
         val filtered = photos.filter { photo ->
             when (val filter = state.filter) {
                 ReviewFilter.All -> true
+                is ReviewFilter.Smart -> filter.kind.matches(photo)
                 is ReviewFilter.Album -> photo.bucketId == filter.albumId
                 is ReviewFilter.Year -> photo.effectiveDateMillis > 0 &&
                     java.time.Instant.ofEpochMilli(photo.effectiveDateMillis).atZone(zone).year == filter.year

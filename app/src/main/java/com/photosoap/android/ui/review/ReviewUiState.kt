@@ -1,5 +1,9 @@
 package com.photosoap.android.ui.review
 
+import com.photosoap.android.domain.model.SmartAlbum
+
+import com.photosoap.android.domain.model.ReviewProgress
+
 import android.content.IntentSender
 import com.photosoap.android.domain.model.AlbumInfo
 import com.photosoap.android.domain.model.MediaKind
@@ -12,6 +16,10 @@ import com.photosoap.android.domain.model.UserStats
 import java.time.YearMonth
 
 data class ReviewUiState(
+    val cycleReviewed: Int = 0,
+    val cycleKept: Int = 0,
+    val cycleDeleted: Int = 0,
+    val cycleUris: Set<String> = emptySet(),
     val photos: List<Photo> = emptyList(),
     val currentIndex: Int = 0,
     val isLoading: Boolean = true,
@@ -21,6 +29,12 @@ data class ReviewUiState(
     val mediaKind: MediaKind = MediaKind.ALL,
     val sortOrder: SortOrder = SortOrder.NEWEST_FIRST,
     val filter: ReviewFilter = ReviewFilter.All,
+    val smartCounts: Map<SmartAlbum, Int> = emptyMap(),
+    val calendarProgress: Map<YearMonth, ReviewProgress> = emptyMap(),
+    val previewHintSeen: Boolean = false,
+    val hideFavorites: Boolean = true,
+    val filterLoading: Boolean = false,
+    val filterError: Boolean = false,
     val albums: List<AlbumInfo> = emptyList(),
     val years: List<Int> = emptyList(),
     val months: List<YearMonth> = emptyList(),
@@ -73,6 +87,8 @@ sealed interface ReviewUiEvent {
     data class ChangeMediaKind(val kind: MediaKind) : ReviewUiEvent
     data class ChangeSortOrder(val order: SortOrder) : ReviewUiEvent
     data class ChangeFilter(val filter: ReviewFilter) : ReviewUiEvent
+    data class ChangeHideFavorites(val enabled: Boolean) : ReviewUiEvent
+    data object RetryFilters : ReviewUiEvent
     data object OpenFilterSheet : ReviewUiEvent
     data object CloseFilterSheet : ReviewUiEvent
     data object OpenPhotoPreview : ReviewUiEvent

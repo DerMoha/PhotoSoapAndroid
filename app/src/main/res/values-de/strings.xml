@@ -223,7 +223,7 @@
     <string name="stats_media_counts">%1$d geprüft · %2$d behalten · %3$d gelöscht</string>
     <string name="stats_media_storage">%1$s freigegeben</string>
     <string name="stats_media_history">Frühere Prüfungen bleiben in deinen Gesamtzahlen enthalten. Getrennte Foto- und Videozahlen werden ab diesem Update erfasst.</string>
-    <string name="review_cycle_summary">%1$d geprüft · %2$d behalten · %3$d gelöscht</string>
+    <string name="review_cycle_summary">In diesem Durchgang: %1$d geprüft · %2$d behalten · %3$d gelöscht</string>
     <string name="review_pending_summary">%1$d in der Löschliste · %2$s ausstehend</string>
     <string name="review_limited_complete">Du hast alle für PhotoSoap zugänglichen Medien geprüft. Wähle weitere Medien aus, um fortzufahren.</string>
     <string name="review_review_delete_list">Löschliste prüfen</string>
@@ -236,4 +236,8 @@
     <string name="filter_animated">GIFs</string>
     <string name="filter_raw">RAW-Fotos</string>
     <string name="preview_zoom">Zoom %1$s</string>
+    <string name="review_library_photos_complete">Du hast alle verfügbaren Fotos in deiner Mediathek geprüft.</string>
+    <string name="review_library_videos_complete">Du hast alle verfügbaren Videos in deiner Mediathek geprüft.</string>
+    <string name="filter_all_images">Alle Fotos</string>
+    <string name="filter_all_videos">Alle Videos</string>
 </resources>

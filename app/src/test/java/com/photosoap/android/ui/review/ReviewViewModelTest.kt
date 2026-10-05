@@ -89,6 +89,8 @@ class ReviewViewModelTest {
         every { emptyCursor.moveToFirst() } returns false
         every { emptyCursor.moveToNext() } returns false
         every { contentResolver.query(any(), any(), any(), any(), any()) } returns emptyCursor
+        every { settingsRepository.previewHintSeen } returns flowOf(false)
+        every { settingsRepository.hideFavorites } returns flowOf(true)
         every { settingsRepository.mediaKind } returns flowOf("all")
         every { settingsRepository.sortOrder } returns flowOf("newest_first")
         every { settingsRepository.useDeleteQueue } returns flowOf(true)
@@ -177,6 +179,96 @@ class ReviewViewModelTest {
 
         assertEquals(SortOrder.SHUFFLED, vm.uiState.value.sortOrder)
         coVerify { settingsRepository.setSortOrder("SHUFFLED") }
+    }
+
+    @Test
+    fun `photo and video decisions update separate counters and cycle summary`() = runTest(testDispatcher) {
+        val reviewed = MutableStateFlow<List<String>>(emptyList())
+        every { photoRepository.observeReviewedPhotoUris() } returns reviewed
+        coEvery { photoRepository.markReviewed(any()) } answers { reviewed.value = reviewed.value + firstArg<String>() }
+        var stored = UserStats()
+        coEvery { statsRepository.getStats() } answers { stored }
+        coEvery { statsRepository.updateStats(any()) } answers { stored = firstArg() }
+        every { contentResolver.query(any(), any(), any(), any(), any()) } answers {
+            val projection = secondArg<Array<String>>()
+            val cursor = mockk<Cursor>(relaxed = true)
+            var row = -1
+            every { cursor.moveToNext() } answers { ++row < 2 }
+            every { cursor.getColumnIndexOrThrow(any()) } answers { projection.indexOf(firstArg()) }
+            every { cursor.getLong(any()) } answers {
+                when (projection[firstArg<Int>()]) {
+                    "_id" -> row + 1L
+                    "date_added" -> 1_700_000_000L
+                    "_size" -> 1024L
+                    else -> 0L
+                }
+            }
+            every { cursor.getString(any()) } answers {
+                when (projection[firstArg<Int>()]) {
+                    "mime_type" -> if (row == 0) "image/jpeg" else "video/mp4"
+                    "_display_name" -> if (row == 0) "photo.jpg" else "video.mp4"
+                    else -> "Camera"
+                }
+            }
+            cursor
+        }
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP))
+        vm.onEvent(ReviewUiEvent.Swiped(SwipeDirection.KEEP))
+        assertEquals(1, stored.photosReviewed)
+        assertEquals(1, stored.videosReviewed)
+        assertEquals(1, stored.photosKept)
+        assertEquals(1, stored.videosKept)
+        assertEquals(2, vm.uiState.value.cycleReviewed)
+        assertEquals(2, vm.uiState.value.cycleKept)
+        assertTrue(vm.uiState.value.isReviewComplete)
+        vm.onEvent(ReviewUiEvent.OpenFilterSheet)
+        assertEquals(2, vm.uiState.value.calendarProgress.values.sumOf { it.total })
+        assertEquals(2, vm.uiState.value.calendarProgress.values.sumOf { it.reviewed })
+        assertTrue(vm.uiState.value.calendarProgress.values.all { it.isComplete })
+        vm.onResume()
+        assertTrue(vm.uiState.value.isReviewComplete)
+        val relaunched = createViewModel()
+        assertTrue(relaunched.uiState.value.isReviewComplete)
+        assertTrue(relaunched.uiState.value.photos.isEmpty())
+    }
+
+    @Test
+    fun `filter load errors can be retried without showing stale success`() = runTest(testDispatcher) {
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns null
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.OpenFilterSheet)
+        assertTrue(vm.uiState.value.filterError)
+        assertFalse(vm.uiState.value.filterLoading)
+        val empty = mockk<Cursor>(relaxed = true)
+        every { empty.moveToNext() } returns false
+        every { contentResolver.query(any(), any(), any(), any(), any()) } returns empty
+        vm.onEvent(ReviewUiEvent.RetryFilters)
+        assertFalse(vm.uiState.value.filterError)
+        assertFalse(vm.uiState.value.filterLoading)
+        assertTrue(vm.uiState.value.years.isEmpty())
+    }
+
+    @Test
+    fun `confirmed video deletion increments only video counters`() = runTest(testDispatcher) {
+        val item = PendingDeletionItem("video", "content://media/external/video/media/1", "clip.mp4", 8192, 1, "video/mp4")
+        val receipt = """{"requestId":"video-receipt","itemIds":["video"],"items":${Json.encodeToString(listOf(item))},"confirmedItemIds":["video"]}"""
+        every { settingsRepository.pendingDeletionRequest } returns flowOf(receipt)
+        createViewModel()
+        coVerify(exactly = 1) { statsRepository.updateStatsForDeletionOnce("video-receipt", match {
+            it.videosDeleted == 1 && it.videoStorageFreed == 8192L && it.photosDeleted == 0 && it.photoStorageFreed == 0L
+        }) }
+    }
+
+    @Test
+    fun `favorites and preview hint preferences are persisted`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onEvent(ReviewUiEvent.ChangeHideFavorites(false))
+        assertFalse(vm.uiState.value.hideFavorites)
+        coVerify { settingsRepository.setHideFavorites(false) }
+        vm.onEvent(ReviewUiEvent.TappedCard)
+        assertTrue(vm.uiState.value.previewHintSeen)
+        coVerify { settingsRepository.setPreviewHintSeen() }
     }
 
     @Test
@@ -285,7 +377,7 @@ class ReviewViewModelTest {
 
         coVerify(exactly = 1) {
             statsRepository.updateStatsForDeletionOnce("request-1", match {
-                it.totalDeleted == 1 && it.storageFreed == 2_048L
+                it.totalDeleted == 1 && it.storageFreed == 2_048L && it.photosDeleted == 1 && it.photoStorageFreed == 2_048L && it.videosDeleted == 0
             })
             metricsRepository.trackBatchDeletionOnce("request-1", 1, 2_048)
             settingsRepository.setPendingDeletionRequest("")

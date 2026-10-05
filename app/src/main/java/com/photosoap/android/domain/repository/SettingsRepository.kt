@@ -15,6 +15,10 @@ interface SettingsRepository {
     val hapticsEnabled: Flow<Boolean>
     val useDeleteQueue: Flow<Boolean>
     val analyticsEnabled: Flow<Boolean>
+    val previewHintSeen: Flow<Boolean>
+    suspend fun setPreviewHintSeen()
+    val hideFavorites: Flow<Boolean>
+    suspend fun setHideFavorites(enabled: Boolean)
     val mediaKind: Flow<String>
     val sortOrder: Flow<String>
     val pendingDeletions: Flow<String>
