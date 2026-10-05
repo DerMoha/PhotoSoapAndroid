@@ -2,6 +2,7 @@ package com.photosoap.android.ui.review.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +69,19 @@ fun PhotoPreviewSheet(
     val gestureModifier = if (photo.isVideo) {
         Modifier
     } else {
-        Modifier.pointerInput(Unit) {
+        Modifier.pointerInput(photo.uri) {
+            detectTapGestures(onDoubleTap = { position ->
+                if (scale > 1f) {
+                    scale = 1f
+                    offsetX = 0f
+                    offsetY = 0f
+                } else {
+                    scale = 2.5f
+                    offsetX = ((size.width / 2f - position.x) * (scale - 1f)).coerceIn(-size.width * (scale - 1f) / 2f, size.width * (scale - 1f) / 2f)
+                    offsetY = ((size.height / 2f - position.y) * (scale - 1f)).coerceIn(-size.height * (scale - 1f) / 2f, size.height * (scale - 1f) / 2f)
+                }
+            })
+        }.pointerInput(photo.uri) {
             detectTransformGestures { _, pan, zoom, _ ->
                 val newScale = (scale * zoom).coerceIn(1f, 5f)
                 scale = newScale
@@ -83,6 +98,7 @@ fun PhotoPreviewSheet(
         }
     }
 
+    val zoomDescription = stringResource(R.string.preview_zoom, java.text.NumberFormat.getPercentInstance().format(scale.toDouble()))
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -92,7 +108,8 @@ fun PhotoPreviewSheet(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .then(gestureModifier),
+                .then(gestureModifier)
+                .semantics { stateDescription = zoomDescription },
             contentAlignment = Alignment.Center,
         ) {
             if (photo.isVideo) {
