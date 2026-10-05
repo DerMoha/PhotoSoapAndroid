@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AchievementsUiState(
+    val unlockDates: Map<String, Long> = emptyMap(),
     val unlockedIds: Set<String> = emptySet(),
     val stats: UserStats? = null,
     val unlockedCount: Int = 0,
@@ -36,8 +37,10 @@ class AchievementsViewModel @Inject constructor(
             combine(
                 achievementRepository.observeUnlockedIds(),
                 statsRepository.observeStats(),
-            ) { ids, stats ->
+                achievementRepository.observeUnlockDates(),
+            ) { ids, stats, dates ->
                 AchievementsUiState(
+                    unlockDates = dates,
                     unlockedIds = ids.toSet(),
                     stats = stats,
                     unlockedCount = ids.size,

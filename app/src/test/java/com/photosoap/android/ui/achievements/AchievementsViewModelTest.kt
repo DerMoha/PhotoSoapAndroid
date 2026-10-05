@@ -31,6 +31,7 @@ class AchievementsViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { achievementRepository.observeUnlockDates() } returns flowOf(emptyMap())
         every { achievementRepository.observeUnlockedIds() } returns flowOf(emptyList())
         every { statsRepository.observeStats() } returns flowOf(null)
     }
@@ -38,6 +39,13 @@ class AchievementsViewModelTest {
     @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `unlock dates are propagated to achievement details`() = runTest(testDispatcher) {
+        every { achievementRepository.observeUnlockDates() } returns flowOf(mapOf("first_steps" to 1234L))
+        val viewModel = AchievementsViewModel(achievementRepository, statsRepository)
+        assertEquals(1234L, viewModel.uiState.value.unlockDates["first_steps"])
     }
 
     @Test

@@ -149,6 +149,8 @@ fun AchievementsScreen(
             AchievementDetailSheet(
                 achievement = achievement,
                 isUnlocked = achievement.id in state.unlockedIds,
+                progress = state.stats?.let { achievement.progress(it).coerceIn(0f, 0.99f) } ?: 0f,
+                unlockDate = state.unlockDates[achievement.id],
                 onDismiss = { selectedAchievement = null },
             )
         }
@@ -160,6 +162,8 @@ fun AchievementsScreen(
 private fun AchievementDetailSheet(
     achievement: Achievement,
     isUnlocked: Boolean,
+    progress: Float,
+    unlockDate: Long?,
     onDismiss: () -> Unit,
 ) {
     androidx.compose.material3.ModalBottomSheet(
@@ -204,6 +208,13 @@ private fun AchievementDetailSheet(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                 )
+            }
+            if (isUnlocked && unlockDate != null) {
+                Text(stringResource(R.string.achievement_completed_on,
+                    com.photosoap.android.util.DateFormatting.formatDisplay(unlockDate)))
+            } else if (!isUnlocked) {
+                androidx.compose.material3.LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                Text(java.text.NumberFormat.getPercentInstance().format(progress.toDouble()))
             }
             Spacer(modifier = Modifier.height(32.dp))
         }

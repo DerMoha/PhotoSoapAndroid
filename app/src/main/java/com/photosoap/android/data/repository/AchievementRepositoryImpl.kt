@@ -11,6 +11,9 @@ class AchievementRepositoryImpl @Inject constructor(
     private val unlockedAchievementDao: UnlockedAchievementDao,
 ) : AchievementRepository {
 
+    override fun observeUnlockDates(): Flow<Map<String, Long>> =
+        unlockedAchievementDao.observeAll().map { items -> items.associate { it.achievementId to it.unlockDate } }
+
     override fun observeUnlockedIds(): Flow<List<String>> {
         return unlockedAchievementDao.observeAll().map { entities ->
             entities.map { it.achievementId }
