@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -280,6 +282,7 @@ fun ReviewScreen(
                                     viewModel.onEvent(ReviewUiEvent.Swiped(direction, photo.uri))
                                 },
                                 onTap = {
+                                    showPreviewHint = false
                                     viewModel.onEvent(ReviewUiEvent.TappedCard)
                                 },
                                 overlayContent = { direction, progress ->
@@ -328,17 +331,22 @@ fun ReviewScreen(
                             null -> null
                         }
                         if (feedback != null || showPreviewHint) {
-                            Surface(
-                                modifier = Modifier.align(Alignment.TopCenter).padding(12.dp).then(
-                                    if (feedback != null) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier
-                                ),
-                                shape = MaterialTheme.shapes.extraLarge,
-                                color = MaterialTheme.colorScheme.inverseSurface,
-                                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                            Box(
+                                modifier = Modifier.align(Alignment.TopCenter).padding(12.dp)
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .background(MaterialTheme.colorScheme.inverseSurface)
+                                    .then(if (feedback == null) Modifier.heightIn(min = 48.dp).clickable(
+                                        enabled = !state.isDeleting && !swipeController.busy,
+                                    ) {
+                                        showPreviewHint = false
+                                        viewModel.onEvent(ReviewUiEvent.TappedCard)
+                                    } else Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     feedback ?: stringResource(R.string.review_preview_hint),
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    color = MaterialTheme.colorScheme.inverseOnSurface,
                                     style = MaterialTheme.typography.labelLarge,
                                     textAlign = TextAlign.Center,
                                 )
