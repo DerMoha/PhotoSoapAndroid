@@ -89,6 +89,14 @@ private fun Achievement.withProgress(p: (UserStats) -> Float): Achievement {
 }
 
 data class UserStats(
+    val photosReviewed: Int = 0,
+    val photosKept: Int = 0,
+    val photosDeleted: Int = 0,
+    val photoStorageFreed: Long = 0,
+    val videosReviewed: Int = 0,
+    val videosKept: Int = 0,
+    val videosDeleted: Int = 0,
+    val videoStorageFreed: Long = 0,
     val totalReviewed: Int = 0,
     val totalDeleted: Int = 0,
     val totalKept: Int = 0,

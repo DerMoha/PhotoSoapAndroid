@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.photosoap.android.data.local.db.PhotoSoapDatabase
 import com.photosoap.android.data.local.db.MIGRATION_1_2
+import com.photosoap.android.data.local.db.MIGRATION_2_3
 import com.photosoap.android.data.local.db.dao.ReviewedPhotoDao
 import com.photosoap.android.data.local.db.dao.UnlockedAchievementDao
 import com.photosoap.android.data.local.db.dao.UserStatsDao
@@ -25,7 +26,7 @@ object DatabaseModule {
             context,
             PhotoSoapDatabase::class.java,
             "photosoap.db",
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
 
     @Provides

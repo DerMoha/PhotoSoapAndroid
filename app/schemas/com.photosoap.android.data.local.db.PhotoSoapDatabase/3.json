@@ -1,0 +1,286 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "89a60e614288eac127636656066f5a65",
+    "entities": [
+      {
+        "tableName": "user_stats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `photosReviewed` INTEGER NOT NULL DEFAULT 0, `photosKept` INTEGER NOT NULL DEFAULT 0, `photosDeleted` INTEGER NOT NULL DEFAULT 0, `photoStorageFreed` INTEGER NOT NULL DEFAULT 0, `videosReviewed` INTEGER NOT NULL DEFAULT 0, `videosKept` INTEGER NOT NULL DEFAULT 0, `videosDeleted` INTEGER NOT NULL DEFAULT 0, `videoStorageFreed` INTEGER NOT NULL DEFAULT 0, `totalReviewed` INTEGER NOT NULL, `totalDeleted` INTEGER NOT NULL, `totalKept` INTEGER NOT NULL, `storageFreed` INTEGER NOT NULL, `sessionReviewCount` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `dayStreak` INTEGER NOT NULL, `lastReviewDate` INTEGER, `todayReviewCount` INTEGER NOT NULL, `todayDate` INTEGER, `bestDayReviewCount` INTEGER NOT NULL, `dailyChallengeProgress` INTEGER NOT NULL, `dailyChallengeTarget` INTEGER NOT NULL, `dailyChallengeType` TEXT NOT NULL, `dailyChallengeDate` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photosReviewed",
+            "columnName": "photosReviewed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "photosKept",
+            "columnName": "photosKept",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "photosDeleted",
+            "columnName": "photosDeleted",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "photoStorageFreed",
+            "columnName": "photoStorageFreed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "videosReviewed",
+            "columnName": "videosReviewed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "videosKept",
+            "columnName": "videosKept",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "videosDeleted",
+            "columnName": "videosDeleted",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "videoStorageFreed",
+            "columnName": "videoStorageFreed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totalReviewed",
+            "columnName": "totalReviewed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalDeleted",
+            "columnName": "totalDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalKept",
+            "columnName": "totalKept",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageFreed",
+            "columnName": "storageFreed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionReviewCount",
+            "columnName": "sessionReviewCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentStreak",
+            "columnName": "currentStreak",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestStreak",
+            "columnName": "bestStreak",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dayStreak",
+            "columnName": "dayStreak",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastReviewDate",
+            "columnName": "lastReviewDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "todayReviewCount",
+            "columnName": "todayReviewCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "todayDate",
+            "columnName": "todayDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "bestDayReviewCount",
+            "columnName": "bestDayReviewCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyChallengeProgress",
+            "columnName": "dailyChallengeProgress",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyChallengeTarget",
+            "columnName": "dailyChallengeTarget",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyChallengeType",
+            "columnName": "dailyChallengeType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyChallengeDate",
+            "columnName": "dailyChallengeDate",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "reviewed_photos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `photo_uri` TEXT NOT NULL, `reviewDate` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoUri",
+            "columnName": "photo_uri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewDate",
+            "columnName": "reviewDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reviewed_photos_photo_uri",
+            "unique": true,
+            "columnNames": [
+              "photo_uri"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_reviewed_photos_photo_uri` ON `${TABLE_NAME}` (`photo_uri`)"
+          }
+        ]
+      },
+      {
+        "tableName": "unlocked_achievements",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `achievement_id` TEXT NOT NULL, `unlockDate` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "achievementId",
+            "columnName": "achievement_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unlockDate",
+            "columnName": "unlockDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_unlocked_achievements_achievement_id",
+            "unique": true,
+            "columnNames": [
+              "achievement_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_unlocked_achievements_achievement_id` ON `${TABLE_NAME}` (`achievement_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "processed_deletions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`requestId` TEXT NOT NULL, `processedAt` INTEGER NOT NULL, PRIMARY KEY(`requestId`))",
+        "fields": [
+          {
+            "fieldPath": "requestId",
+            "columnName": "requestId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "processedAt",
+            "columnName": "processedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "requestId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '89a60e614288eac127636656066f5a65')"
+    ]
+  }
+}

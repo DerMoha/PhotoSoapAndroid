@@ -12,3 +12,16 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN photosReviewed INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN photosKept INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN photosDeleted INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN photoStorageFreed INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN videosReviewed INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN videosKept INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN videosDeleted INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_stats ADD COLUMN videoStorageFreed INTEGER NOT NULL DEFAULT 0")
+    }
+}

@@ -8,6 +8,22 @@ import androidx.room.PrimaryKey
 data class UserStatsEntity(
     @PrimaryKey
     val id: Int = 1,
+    @ColumnInfo(defaultValue = "0")
+    val photosReviewed: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val photosKept: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val photosDeleted: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val photoStorageFreed: Long = 0,
+    @ColumnInfo(defaultValue = "0")
+    val videosReviewed: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val videosKept: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val videosDeleted: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val videoStorageFreed: Long = 0,
     val totalReviewed: Int = 0,
     val totalDeleted: Int = 0,
     val totalKept: Int = 0,

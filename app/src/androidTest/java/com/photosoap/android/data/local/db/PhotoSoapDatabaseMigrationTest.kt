@@ -51,6 +51,22 @@ class PhotoSoapDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migrate2To3PreservesTotalsAndStartsMediaBreakdownAtZero() {
+        helper.createDatabase("media-migration-test", 2).apply {
+            execSQL("INSERT INTO user_stats (id, totalReviewed, totalDeleted, totalKept, storageFreed, sessionReviewCount, currentStreak, bestStreak, dayStreak, todayReviewCount, bestDayReviewCount, dailyChallengeProgress, dailyChallengeTarget, dailyChallengeType) VALUES (1, 7, 2, 5, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 'review')")
+            close()
+        }
+        helper.runMigrationsAndValidate("media-migration-test", 3, true, MIGRATION_2_3).use { db ->
+            db.query("SELECT totalReviewed, storageFreed, photosReviewed, videosReviewed, photoStorageFreed, videoStorageFreed FROM user_stats WHERE id = 1").use {
+                check(it.moveToFirst())
+                assertEquals(7, it.getInt(0))
+                assertEquals(4096L, it.getLong(1))
+                for (column in 2..5) assertEquals(0L, it.getLong(column))
+            }
+        }
+    }
+
     private companion object {
         const val TEST_DATABASE = "migration-test"
     }

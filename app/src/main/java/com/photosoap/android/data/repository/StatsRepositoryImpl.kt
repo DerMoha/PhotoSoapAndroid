@@ -37,6 +37,14 @@ class StatsRepositoryImpl @Inject constructor(
 }
 
 fun UserStatsEntity.toDomain(): UserStats = UserStats(
+    photosReviewed = photosReviewed,
+    photosKept = photosKept,
+    photosDeleted = photosDeleted,
+    photoStorageFreed = photoStorageFreed,
+    videosReviewed = videosReviewed,
+    videosKept = videosKept,
+    videosDeleted = videosDeleted,
+    videoStorageFreed = videoStorageFreed,
     totalReviewed = totalReviewed,
     totalDeleted = totalDeleted,
     totalKept = totalKept,
@@ -56,6 +64,14 @@ fun UserStatsEntity.toDomain(): UserStats = UserStats(
 )
 
 fun UserStats.toEntity(): UserStatsEntity = UserStatsEntity(
+    photosReviewed = photosReviewed,
+    photosKept = photosKept,
+    photosDeleted = photosDeleted,
+    photoStorageFreed = photoStorageFreed,
+    videosReviewed = videosReviewed,
+    videosKept = videosKept,
+    videosDeleted = videosDeleted,
+    videoStorageFreed = videoStorageFreed,
     totalReviewed = totalReviewed,
     totalDeleted = totalDeleted,
     totalKept = totalKept,

@@ -160,6 +160,14 @@ fun StatsScreen(
 
                 }
 
+                Text(stringResource(R.string.stats_media_breakdown), style = MaterialTheme.typography.titleLarge)
+                state.stats?.let { stats ->
+                    MediaStatsCard(stringResource(R.string.filter_photos), stats.photosReviewed, stats.photosKept, stats.photosDeleted, stats.photoStorageFreed)
+                    MediaStatsCard(stringResource(R.string.filter_videos), stats.videosReviewed, stats.videosKept, stats.videosDeleted, stats.videoStorageFreed)
+                    if (stats.totalReviewed > stats.photosReviewed + stats.videosReviewed) {
+                        Text(stringResource(R.string.stats_media_history), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.stats_streaks),
@@ -287,6 +295,17 @@ fun StatsScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun MediaStatsCard(title: String, reviewed: Int, kept: Int, deleted: Int, bytes: Long) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.stats_media_counts, reviewed, kept, deleted))
+            Text(stringResource(R.string.stats_media_storage, FileSize.format(bytes)))
         }
     }
 }

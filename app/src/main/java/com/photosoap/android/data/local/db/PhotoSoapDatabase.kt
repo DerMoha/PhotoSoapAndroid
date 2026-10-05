@@ -17,7 +17,7 @@ import com.photosoap.android.data.local.db.entity.UserStatsEntity
         UnlockedAchievementEntity::class,
         ProcessedDeletionEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class PhotoSoapDatabase : RoomDatabase() {
