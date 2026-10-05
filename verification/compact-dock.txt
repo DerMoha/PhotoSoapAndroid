@@ -1,0 +1,40 @@
+Compact review dock verification — 2026-10-05
+
+Source code: 7c903b8 (committed layout changes only).
+Signed candidate: versionCode 3 / 1.0.0-beta.3.
+APK: PhotoSoap-1.0.0-beta.3.apk (4.9 MB).
+SHA-256: b2acf36aa2c4b3d42944bab043e3318bdf02af895551c5d6c7c41b0b23f17730
+apksigner verification passed. Installed upgrade on API 36 preserved existing data/settings.
+
+Layout
+- Delete/Keep, Undo and a counted Delete List chip share a 48 dp action row.
+- With no queued media, only the two labeled decision buttons appear.
+- Larger accessibility text and narrow constraints can wrap controls rather than clip them.
+- Remaining count is in the photo metadata gradient; next-card metadata uses the same geometry.
+- Preview hint appears briefly on the photo once per visit until preview has been learned.
+- Decision feedback appears on the photo and announces politely to accessibility services.
+- Feedback does not intercept photo gestures; the preview hint has a click action.
+- Removed the duplicate review bottom inset; the parent navigation handles system navigation space.
+- The existing queue tray remains available on loading/error/empty/completion screens without a photo deck.
+
+Space comparison on the 1080x2400 API 36 emulator, normal text size, queued item:
+Prior photo bounds y=266..1589: 1323 px high (api36-swipe-queued-feedback.png).
+Compact dock photo bounds y=266..1978: 1712 px high (api36-dock-german.png).
+Increase: 389 px / 29.4%. The new deck keeps this height when the first item is queued.
+
+Verification
+Built from a temporary checkout of committed source, excluding concurrent uncommitted analytics edits.
+PHOTOSOAP_RUN_DEVICE_TESTS=1 ./scripts/verify-beta.sh passed:
+100 debug unit tests, 100 release unit tests, zero failures/errors.
+Debug/release lint: zero errors.
+Debug/release APK, signed release AAB, production configuration verification passed.
+14 instrumentation tests passed, zero failures/errors/skips.
+Three new dock tests verify German controls fit one row, German text at 200% remains actionable,
+and all four controls are disabled during a busy state. Existing swipe/preview/migration tests pass.
+
+Manual review used disposable emulator media; no media was deleted.
+Verified queued-item chip opens the existing sheet, Undo clears the queued item,
+normal German layout, 200% German text with a queue, and restored system font scale 1.0.
+Signed release smoke: versionCode 3, German layout, photo preview, Delete List sheet, data/settings retained.
+Screenshots: verification/emulator/api36-dock-german.png,
+api36-dock-large-text-queued.png and api36-dock-release.png.
