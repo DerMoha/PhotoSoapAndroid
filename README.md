@@ -2,6 +2,24 @@
 
 PhotoSoap is an on-device photo and video review app for Android 9 (API 28) and newer. Swipe right to keep media or left to add it to a system-confirmed delete list.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/source/01-review.png" width="220" alt="PhotoSoap photo review" />
+  <img src="docs/screenshots/source/06-swipe.png" width="220" alt="Swipe right to keep a photo" />
+  <img src="docs/screenshots/source/02-delete-list.png" width="220" alt="Review queued photos before deleting" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/source/dark/03-statistics.png" width="220" alt="PhotoSoap statistics in dark mode" />
+  <img src="docs/screenshots/source/04-achievements.png" width="220" alt="PhotoSoap achievements" />
+  <img src="docs/screenshots/source/05-appearance.png" width="220" alt="PhotoSoap appearance settings" />
+</p>
+
+Screens show the actual Android UI with sample photography and demo progress.
+These are unframed emulator captures. See the [screenshot pack](docs/screenshots/README.md)
+for capture details and optional Google Play artwork.
+
 ## Development
 
 Requirements:
