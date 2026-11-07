@@ -1,0 +1,128 @@
+name: Release APK
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@07d1f8453baaff67fb503883367f8b13e6158a54 # v6
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          cmdline-tools-version: "15859902"
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install Android build tools
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          METRICS_URL: ${{ secrets.METRICS_URL }}
+          METRICS_ANON_KEY: ${{ secrets.METRICS_ANON_KEY }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+
+          required = ("ANDROID_KEYSTORE_BASE64", "ANDROID_KEYSTORE_PASSWORD",
+                      "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD")
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit("Missing GitHub Actions secrets: " + ", ".join(missing))
+
+          keystore = Path(os.environ["RUNNER_TEMP"]) / "photosoap-release.keystore"
+          keystore.touch(mode=0o600)
+          keystore.write_bytes(base64.b64decode(os.environ["ANDROID_KEYSTORE_BASE64"], validate=True))
+
+          def escape(value):
+              escaped = (value.replace("\\", "\\\\").replace("\n", "\\n")
+                         .replace("\r", "\\r").replace("\t", "\\t")
+                         .replace("\f", "\\f").replace(" ", "\\ "))
+              return "".join(char if ord(char) < 128 else json.dumps(char)[1:-1]
+                             for char in escaped)
+
+          properties = {
+              "signing.storeFile": str(keystore),
+              "signing.storePassword": os.environ["ANDROID_KEYSTORE_PASSWORD"],
+              "signing.keyAlias": os.environ["ANDROID_KEY_ALIAS"],
+              "signing.keyPassword": os.environ["ANDROID_KEY_PASSWORD"],
+              "metrics.url": os.environ.get("METRICS_URL", ""),
+              "metrics.anonKey": os.environ.get("METRICS_ANON_KEY", ""),
+          }
+          config = Path("secrets.properties")
+          config.touch(mode=0o600)
+          config.write_text("".join(f"{key}={escape(value)}\n" for key, value in properties.items()),
+                            encoding="utf-8")
+          PY
+      - name: Test, lint, and build signed APK
+        run: ./gradlew verifyProductionConfiguration testReleaseUnitTest lintRelease assembleRelease --no-daemon
+      - name: Verify signature
+        run: '"$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk'
+      - name: Prepare download and checksum
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          from pathlib import Path
+
+          source = Path("app/build/outputs/apk/release")
+          metadata = json.loads((source / "output-metadata.json").read_text())
+          version = metadata["elements"][0]["versionName"]
+          if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z.+-]*", version):
+              raise SystemExit("Version name cannot be used as a download filename")
+          tag = os.environ.get("RELEASE_TAG", "")
+          if tag and tag != f"v{version}":
+              raise SystemExit(f"Release tag must be v{version} to match the APK version")
+          output = Path("release-assets")
+          output.mkdir(exist_ok=True)
+          apk = output / f"PhotoSoap-{version}.apk"
+          shutil.copyfile(source / "app-release.apk", apk)
+          checksum = hashlib.sha256(apk.read_bytes()).hexdigest()
+          (output / f"{apk.name}.sha256").write_text(f"{checksum}  {apk.name}\n")
+          PY
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: photosoap-release-apk
+          path: release-assets/*
+          if-no-files-found: error
+      - name: Attach APK to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" release-assets/* --clobber
+      - name: Remove signing material
+        if: always()
+        run: rm -f secrets.properties "$RUNNER_TEMP/photosoap-release.keystore"
