@@ -38,4 +38,3 @@ never media contents, filenames, or locations.
 ## Contributing
 
 Found a bug or have an idea? [Open an issue](https://github.com/DerMoha/PhotoSoapAndroid/issues).
-For development setup, see the [development guide](docs/DEVELOPMENT.md).

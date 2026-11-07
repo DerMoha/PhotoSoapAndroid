@@ -50,7 +50,7 @@ Video: verification/emulator/api36-swipe-review.mp4 (debug; gesture and button h
 Limits
 The emulator cannot validate how the haptic motor feels. Physical-device feedback and
 representative real camera/video libraries remain part of external beta testing.
-The wider release/distribution gates in RELEASE_CHECKLIST.md still apply.
+Wider release and distribution acceptance checks were outside this verification scope.
 
 Research
 https://developer.android.com/develop/ui/views/haptics/haptics-principles

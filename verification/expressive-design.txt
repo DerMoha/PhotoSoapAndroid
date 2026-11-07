@@ -47,8 +47,8 @@ Emulator visual and interaction checks (PhotoSoap_Beta_API36):
 Evidence: verification/emulator/api36-expressive-*.png
 Logs: successful local Gradle verification retained in /private/tmp/
 photosoap-expressive-validated.log and photosoap-expressive-detail.log.
-This pass does not replace the physical-device and distribution acceptance
-checks in RELEASE_CHECKLIST.md; earlier API 28/29/33/34 smoke evidence is
+This pass does not replace physical-device and distribution acceptance
+checks; earlier API 28/29/33/34 smoke evidence is
 historical and was not rerun for this design pass.
 
 Signed APK SHA-256:
