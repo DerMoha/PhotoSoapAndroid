@@ -1,16 +1,17 @@
-name: Release APK
+name: Main prerelease
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
-concurrency:
-  group: release-apk-${{ github.ref }}
-  cancel-in-progress: false
+# Keep this workflow's identity: run_number is the patch version, and reruns keep it.
+# Do not group runs by branch: every main push must get its own prerelease.
+env:
+  RELEASE_VERSION: 0.0.${{ github.run_number }}
+  RELEASE_TAG: v0.0.${{ github.run_number }}
 
 jobs:
   build:
@@ -22,6 +23,9 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Set Android version code
+        # Codes 1–3 were already used by the earlier beta builds.
+        run: echo "RELEASE_VERSION_CODE=$((GITHUB_RUN_NUMBER + 3))" >> "$GITHUB_ENV"
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
@@ -80,12 +84,13 @@ jobs:
                             encoding="utf-8")
           PY
       - name: Test, lint, and build signed APK
-        run: ./gradlew verifyProductionConfiguration testReleaseUnitTest lintRelease assembleRelease --no-daemon
+        run: >-
+          ./gradlew verifyProductionConfiguration testReleaseUnitTest lintRelease assembleRelease
+          -PreleaseVersionName="$RELEASE_VERSION" -PreleaseVersionCode="$RELEASE_VERSION_CODE"
+          --no-daemon
       - name: Verify signature
         run: '"$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk'
       - name: Prepare download and checksum
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           python3 - <<'PY'
           import hashlib
@@ -100,9 +105,10 @@ jobs:
           version = metadata["elements"][0]["versionName"]
           if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z.+-]*", version):
               raise SystemExit("Version name cannot be used as a download filename")
-          tag = os.environ.get("RELEASE_TAG", "")
-          if tag and tag != f"v{version}":
-              raise SystemExit(f"Release tag must be v{version} to match the APK version")
+          if version != os.environ["RELEASE_VERSION"]:
+              raise SystemExit("APK version does not match the prerelease version")
+          if metadata["elements"][0]["versionCode"] != int(os.environ["RELEASE_VERSION_CODE"]):
+              raise SystemExit("APK version code does not match the prerelease version code")
           output = Path("release-assets")
           output.mkdir(exist_ok=True)
           apk = output / f"PhotoSoap-{version}.apk"
@@ -116,13 +122,22 @@ jobs:
           name: photosoap-release-apk
           path: release-assets/*
           if-no-files-found: error
-      - name: Attach APK to GitHub release
-        if: github.event_name == 'release'
+          overwrite: true
+      - name: Publish GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" release-assets/* --clobber
+        run: |
+          if gh release view "$RELEASE_TAG" --json tagName > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+            gh release edit "$RELEASE_TAG" --prerelease --latest=false
+          else
+            printf 'Automated prerelease from main.\n\nCommit: %s\n\nDownload the signed APK below.\n' \
+              "$GITHUB_SHA" > "$RUNNER_TEMP/release-notes.txt"
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --target "$GITHUB_SHA" --title "PhotoSoap $RELEASE_VERSION" \
+              --notes-file "$RUNNER_TEMP/release-notes.txt" --prerelease --latest=false
+          fi
       - name: Remove signing material
         if: always()
         run: rm -f secrets.properties "$RUNNER_TEMP/photosoap-release.keystore"

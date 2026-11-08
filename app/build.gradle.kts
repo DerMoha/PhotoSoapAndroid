@@ -42,8 +42,8 @@ android {
         applicationId = "com.photosoap"
         minSdk = 28
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.0-beta.3"
+        versionCode = providers.gradleProperty("releaseVersionCode").orElse("4").get().toInt()
+        versionName = providers.gradleProperty("releaseVersionName").orElse("0.0.1").get()
 
         buildConfigField(
             "String",
